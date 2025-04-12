@@ -1,0 +1,31 @@
+{
+  "actors": 2,
+  "checkpoint_freq": 1,
+  "eval_levels": 1,
+  "evaluation_window": 10,
+  "evaluators": 1,
+  "game": "hex(board_size=5)",
+  "learning_rate": 0.01,
+  "max_simulations": 50,
+  "max_steps": 1,
+  "nn_depth": 2,
+  "nn_model": "mlp",
+  "nn_width": 64,
+  "observation_shape": [
+    9,
+    5,
+    5
+  ],
+  "output_size": 25,
+  "path": "./weights/alpha_zero/alpha_zero_hex_5_1",
+  "policy_alpha": 0.3,
+  "policy_epsilon": 0.25,
+  "quiet": false,
+  "replay_buffer_reuse": 3,
+  "replay_buffer_size": 10000,
+  "temperature": 1.0,
+  "temperature_drop": 10,
+  "train_batch_size": 32,
+  "uct_c": 1.0,
+  "weight_decay": 0.0001
+}

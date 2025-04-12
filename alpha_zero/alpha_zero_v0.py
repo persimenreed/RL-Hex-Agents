@@ -2,7 +2,7 @@ from open_spiel.python.algorithms.alpha_zero import alpha_zero
 from open_spiel.python.algorithms.alpha_zero.alpha_zero import Config
 import os
 
-output_path = "./alpha_zero_hex_5"
+output_path = "./weights/alpha_zero/alpha_zero_hex_5_1"
 os.makedirs(output_path, exist_ok=True)
 
 config = Config(
@@ -14,8 +14,8 @@ config = Config(
     train_batch_size=32,
     replay_buffer_size=10000,
     replay_buffer_reuse=3,
-    max_steps=100,  # Small test run
-    checkpoint_freq=2,
+    max_steps=1,
+    checkpoint_freq=1,
     actors=2,
     evaluators=1,
     evaluation_window=10,
@@ -31,8 +31,8 @@ config = Config(
     nn_model="mlp",
     nn_width=64,
     nn_depth=2,
-    observation_shape=None,  # Will be filled in
-    output_size=None,        # Will be filled in
+    observation_shape=None,
+    output_size=None,
 
     quiet=False,
 )
