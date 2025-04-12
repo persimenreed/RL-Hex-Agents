@@ -1,3 +1,5 @@
+#python3 testing/live-updates.py ./weights/alpha_zero/alpha_zero_hex_5 checkpoint-100 dummy
+
 import pyspiel
 import random
 import matplotlib.pyplot as plt
