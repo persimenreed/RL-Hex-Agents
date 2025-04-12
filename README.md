@@ -4,3 +4,8 @@ to find open_spiel folder:
 
 to find project folder:
 \\wsl$\Ubuntu\home\persi\projects\RL-Hex-Agents
+
+to run code in vscode:
+code .
+source venv/bin/activate
+

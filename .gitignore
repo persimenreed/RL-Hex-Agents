@@ -18,3 +18,9 @@ Thumbs.db
 # Ignore logs and temporary files
 *.log
 *.tmp
+
+# Ignore logs during training
+**/log-actor-*
+**/log-evaluator-*
+**/log-learner*
+
