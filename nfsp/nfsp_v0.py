@@ -6,14 +6,16 @@ from open_spiel.python import rl_environment
 
 tf.disable_v2_behavior()
 
+episodes = 2000
+
 # === Setup ===
 game = pyspiel.load_game("hex(board_size=5)")
 env = rl_environment.Environment(game, include_full_state=True)
 num_players = env.num_players
 info_spec = env.observation_spec()["info_state"]
 
-# Output path
-checkpoint_dir = "./weights/nfsp/nfsp_hex_5_1000"
+# Output path for the NFSP checkpoint
+checkpoint_dir = f"./weights/nfsp/nfsp_hex_5_{episodes}"
 os.makedirs(checkpoint_dir, exist_ok=True)
 
 sess = tf.Session()
@@ -21,7 +23,6 @@ agents = []
 
 state_representation_size = game.observation_tensor_size()
 num_actions = game.num_distinct_actions()
-
 
 for pid in range(num_players):
     agent = NFSP(
@@ -35,7 +36,7 @@ for pid in range(num_players):
         batch_size=32,
         rl_learning_rate=0.01,
         sl_learning_rate=0.01,
-        min_buffer_size_to_learn=1000,
+        min_buffer_size_to_learn=episodes,
         learn_every=64,
         optimizer_str="sgd",
     )
@@ -44,7 +45,7 @@ for pid in range(num_players):
 sess.run(tf.global_variables_initializer())
 
 # === Training ===
-for episode in range(1, 1001):
+for episode in range(1, episodes+1):
     time_step = env.reset()
     while not time_step.last():
         current_player = time_step.observations["current_player"]
@@ -53,11 +54,17 @@ for episode in range(1, 1001):
     for agent in agents:
         agent.step(time_step)
 
-    if episode % 100 == 0 or episode == 1000:
-        print(f"Episode {episode}/1000")
+    if episode % 100 == 0 or episode == episodes:
+        print(f"Episode {episode}/{episodes}")
 
 # === Save Weights ===
 for agent in agents:
     agent.save(checkpoint_dir)
+
+# ---- NEW: Export the meta graph for easier visualization ----
+saver = tf.train.Saver()
+meta_graph_path = os.path.join(checkpoint_dir, "nfsp_model.meta")
+saver.export_meta_graph(meta_graph_path, as_text=True)
+print("Meta graph exported to:", meta_graph_path)
 
 print("NFSP training complete.")
