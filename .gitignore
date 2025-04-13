@@ -24,3 +24,6 @@ Thumbs.db
 **/log-evaluator-*
 **/log-learner*
 
+# ingore weights
+weights/
+

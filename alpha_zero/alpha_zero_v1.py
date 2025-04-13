@@ -2,19 +2,24 @@ from open_spiel.python.algorithms.alpha_zero import alpha_zero
 from open_spiel.python.algorithms.alpha_zero.alpha_zero import Config
 import os
 
-output_path = "./weights/alpha_zero/alpha_zero_hex_5_1"
+# only cpu
+os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
+
+board_size = 11
+train_time = 30
+
+output_path = f"./weights/alpha_zero/alpha_zero_hex_{board_size}_{train_time}"
 os.makedirs(output_path, exist_ok=True)
 
 config = Config(
-    #game="hex_swap(board_size=5)",
-    game="hex(board_size=5)",
+    game=f"hex(board_size={board_size})",
     path=output_path,
-    learning_rate=0.01,
+    learning_rate=0.005,
     weight_decay=1e-4,
-    train_batch_size=32,
+    train_batch_size=128,
     replay_buffer_size=10000,
     replay_buffer_reuse=3,
-    max_steps=1,
+    max_steps=200,
     checkpoint_freq=1,
     actors=2,
     evaluators=1,

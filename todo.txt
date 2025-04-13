@@ -1,0 +1,11 @@
+1: optimize hyperparameters
+
+2: implement rainbow dqn
+
+3: compare training results for each 30 minutes, to get a plot. Preferebly against mohex
+
+4: play against each other in a round robin format
+
+5: visualize a game (live or final) (WHERE WE SEE STATE VALUES FOR EACH STATE)
+
+6: TBC

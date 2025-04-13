@@ -1,4 +1,4 @@
-#python3 testing/live-updates.py ./weights/alpha_zero/alpha_zero_hex_5_100 checkpoint-100 dummy
+#python3 testing/live-updates.py ./weights/alpha_zero/alpha_zero_hex_11_30 checkpoint-28 dummy
 
 import pyspiel
 import random
@@ -111,7 +111,7 @@ def load_model_evaluator(game, checkpoint_dir, checkpoint_name, model_type="mlp"
 
 
 def test_hex_visual(checkpoint_dir, checkpoint_name_1, checkpoint_name_2, fig, ax):
-    game = pyspiel.load_game("hex(board_size=5)")
+    game = pyspiel.load_game("hex(board_size=11)")
     state = game.new_initial_state()
     board_size = game.get_parameters()["board_size"]
 
