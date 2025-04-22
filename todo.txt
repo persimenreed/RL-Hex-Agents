@@ -1,11 +1,29 @@
-1: optimize hyperparameters
+1: implement iddqn
 
-2: implement rainbow dqn
+2: optimize hyperparameters
 
-3: compare training results for each 30 minutes, to get a plot. Preferebly against mohex
+3: define evaluation methods
 
-4: play against each other in a round robin format
+4: plot training results against each other
 
-5: visualize a game (live or final) (WHERE WE SEE STATE VALUES FOR EACH STATE)
+5: play against each other in a round robin format
 
-6: TBC
+6: visualize a game (live or final) (WHERE WE SEE STATE VALUES FOR EACH STATE)
+
+7: TBC
+
+------------
+
+
+22/4: Implement all algorithms: iddqn, alphazero, nfsp
+23/4: define evaluation methods for multiagent self play, optimize hyperparameters and ensure weights are reproducible
+    this would probably include self_train->evaluate win % against its second agent -> use the best -> evaluate against other algorithms
+24/4: train models for a given time, plot graphs when finished
+25/4: visualize a game in spielviz
+tbc: maybe create a hex bot from the best model
+
+
+----------------
+
+
+evaluation:
