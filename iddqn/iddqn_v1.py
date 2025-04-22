@@ -1,5 +1,3 @@
-# iddqn_v8.py
-
 import os
 import time
 import random
@@ -41,7 +39,6 @@ LOG_INTERVAL_SEC      = 60.0
 SNAPSHOT_INTERVAL_SEC = 600   # 10 min
 
 def compute_epsilon(elapsed):
-    """Linear decay from EPS_START→EPS_END over first half of MAX_TRAIN_SEC."""
     half = MAX_TRAIN_SEC / 2.0
     if elapsed < half:
         frac = elapsed / half
@@ -72,15 +69,16 @@ class QNet(nn.Module):
 
 class IDDQNAgent:
     def __init__(self, obs_dim, n_actions, hidden_size, lr, buf_capacity):
-        self.epsilon = EPS_START
-        self.online  = QNet(obs_dim, n_actions, hidden_size).to(device)
-        self.target  = QNet(obs_dim, n_actions, hidden_size).to(device)
+        self.epsilon    = EPS_START
+        self.online     = QNet(obs_dim, n_actions, hidden_size).to(device)
+        self.target     = QNet(obs_dim, n_actions, hidden_size).to(device)
         self.target.load_state_dict(self.online.state_dict())
         self.target.eval()
-        self.opt     = optim.Adam(self.online.parameters(), lr=lr)
-        self.buf     = ReplayBuffer(buf_capacity)
-        self.steps   = 0
-        self.losses  = []
+        self.opt        = optim.Adam(self.online.parameters(), lr=lr)
+        self.buf        = ReplayBuffer(buf_capacity)
+        self.steps      = 0
+        self.loss_sum   = 0.0
+        self.loss_count = 0
 
     def act(self, obs, legal_actions):
         if random.random() < self.epsilon:
@@ -114,10 +112,13 @@ class IDDQNAgent:
         self.opt.step()
 
         self.steps += 1
-        self.losses.append(loss.item())
+        l = loss.item()
+        self.loss_sum   += l
+        self.loss_count += 1
+
         if self.steps % TARGET_UPDATE_FREQ == 0:
             self.target.load_state_dict(self.online.state_dict())
-        return loss.item()
+        return l
 
 # ─────────────────── Main Loop ───────────────────
 for b in BOARD_SIZES:
@@ -128,7 +129,7 @@ for b in BOARD_SIZES:
 
     root     = f"./weights/iddqn/iddqn_hex_{b}_{TRAIN_HOURS}h"
     os.makedirs(root, exist_ok=True)
-    meta_csv = os.path.join(root, f"metadata{b}x{b}.csv")
+    meta_csv = os.path.join(root, f"metadata_{b}x{b}.csv")
 
     with open(meta_csv, "w", newline="") as f:
         writer = csv.writer(f)
@@ -138,7 +139,8 @@ for b in BOARD_SIZES:
         env    = rl_environment.Environment(game, include_full_state=True)
         obs_d  = game.observation_tensor_size()
         n_act  = game.num_distinct_actions()
-        agents = [IDDQNAgent(obs_d, n_act, hid, lr, buf_cap) for _ in range(env.num_players)]
+        agents = [IDDQNAgent(obs_d, n_act, hid, lr, buf_cap)
+                  for _ in range(env.num_players)]
 
         start     = time.time()
         next_log  = start + LOG_INTERVAL_SEC
@@ -177,11 +179,16 @@ for b in BOARD_SIZES:
 
             if now >= next_snap:
                 buf_len  = len(agents[0].buf)
-                avg_loss = sum(agents[0].losses) / len(agents[0].losses) if agents[0].losses else None
-                writer.writerow([int(elapsed), episode, eps, agents[0].steps, buf_len, avg_loss])
+                avg_loss = (agents[0].loss_sum / agents[0].loss_count
+                            if agents[0].loss_count else None)
+                writer.writerow([int(elapsed), episode, eps,
+                                 agents[0].steps, buf_len, avg_loss])
                 f.flush()
+                # reset loss stats
                 for ag in agents:
-                    ag.losses.clear()
+                    ag.loss_sum   = 0.0
+                    ag.loss_count = 0
+
                 for i, ag in enumerate(agents):
                     torch.save(
                         ag.online.state_dict(),

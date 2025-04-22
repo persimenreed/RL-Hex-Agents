@@ -226,7 +226,7 @@ if __name__ == "__main__":
               "<alg1> <full_path_ckpt1> <alg2> <full_path_ckpt2>")
         sys.exit(1)
 
-    game = pyspiel.load_game("hex(board_size=8)")
+    game = pyspiel.load_game("hex(board_size=5)")
     print(f"Loading {alg1} from {ckpt_dir1}/{ckpt_name1}")
     eval1 = load_evaluator(alg1, game, ckpt_dir1, ckpt_name1)
     print(f"Loading {alg2} from {ckpt_dir2}/{ckpt_name2}")
