@@ -49,7 +49,7 @@ for b in BOARD_SIZES:
 
     root     = f"./weights/nfsp/nfsp_hex_{b}_{TRAIN_HOURS}h"
     os.makedirs(root, exist_ok=True)
-    meta_csv = os.path.join(root, "metadata.csv")
+    meta_csv = os.path.join(root, f"metadata{b}x{b}.csv")
 
     with open(meta_csv, "w", newline="") as f:
         writer = csv.writer(f)
