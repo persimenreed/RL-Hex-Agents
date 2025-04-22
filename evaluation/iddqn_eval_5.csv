@@ -1,1 +1,3 @@
 timestamp_s,champion,h2h_win,mcts_win
+600,0,0.500,0.000
+1200,0,0.500,0.040

@@ -199,3 +199,6 @@ for b in BOARD_SIZES:
             if elapsed >= MAX_TRAIN_SEC:
                 print(f"Completed IDDQN board {b}×{b}.")
                 break
+
+if __name__ == "__main__":
+    main()

@@ -1,16 +1,20 @@
-1: implement iddqn
+#1: implement iddqn
 
-2: optimize hyperparameters
+#2: optimize hyperparameters
 
-3: define evaluation methods
+#3: define evaluation methods
 
-4: plot training results against each other
+4: Train models
 
-5: play against each other in a round robin format
+5: Evaluate performance
 
-6: visualize a game (live or final) (WHERE WE SEE STATE VALUES FOR EACH STATE)
+6: plot training results against each other
 
-7: TBC
+7: play against each other in a round robin format
+
+8: visualize a game (live or final) (WHERE WE SEE STATE VALUES FOR EACH STATE)
+
+9: TBC
 
 ------------
 
