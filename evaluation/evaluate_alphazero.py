@@ -90,10 +90,10 @@ class EvalAlphaZeroAgent:
 
 
 def main():
-    for B in [5, 8, 11]:
+    for B in [11]:
         print(f"\n=== Board size {B} ===")
         game      = pyspiel.load_game(f"hex(board_size={B})")
-        sims      = {5:100, 8:100, 11:100}[B]
+        sims      = {5:50, 8:50, 11:50}[B]
         mcts_bot  = EvalMCTSBot(game, sims)
 
         csv_path = os.path.join(PROJECT_ROOT, "evaluation", f"eval_{B}.csv")

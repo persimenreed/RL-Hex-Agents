@@ -2,8 +2,8 @@
 """
 evaluate_ppo.py
 
-Evaluate PPO policies against MCTS for Hex (5×5, 8×8, 11×11), write evaluation/eval_{B}.csv,
-and copy the best‐performing checkpoint into best_weight/ppo/hex_{B}/.
+Evaluate PPO policies against MCTS for Hex (5×5, 8×8, 11×11),
+write evaluation/eval_{B}.csv, and copy the best checkpoint into best_weight/ppo/hex_{B}/.
 """
 import os
 import sys
@@ -15,6 +15,7 @@ import torch
 import numpy as np
 import pyspiel
 
+# Put project root on PYTHONPATH so we can import ppo_v0
 SCRIPT_DIR   = os.path.dirname(__file__)
 PROJECT_ROOT = os.path.abspath(os.path.join(SCRIPT_DIR, os.pardir))
 sys.path.insert(0, PROJECT_ROOT)
@@ -76,24 +77,23 @@ class EvalPPOAgent:
         return int(np.argmax(logits + mask))
 
 
-if __name__ == "__main__":
+def main():
     for B in [5, 8, 11]:
         print(f"\n=== Board size {B} ===")
         game      = pyspiel.load_game(f"hex(board_size={B})")
-        sims      = {5:100, 8:100, 11:100}[B]
+        sims      = {5:50, 8:50, 11:50}[B]
         mcts_bot  = EvalMCTSBot(game, sims)
         obs_dim   = game.observation_tensor_size()
         n_actions = game.num_distinct_actions()
 
-        # ensure evaluation dir exists
+        # ensure eval dir
         eval_dir = os.path.join(PROJECT_ROOT, "evaluation")
         os.makedirs(eval_dir, exist_ok=True)
 
-        out_csv = os.path.join(eval_dir, f"eval_{B}.csv")
-        best_wr = -1.0
+        out_csv   = os.path.join(eval_dir, f"eval_{B}.csv")
+        best_wr   = -1.0
         best_ckpt = None
 
-        # write fresh CSV and track best
         with open(out_csv, "w", newline="") as fout:
             writer = csv.writer(fout)
             writer.writerow(["timestamp_s", "ppo_mcts_win"])
@@ -112,14 +112,17 @@ if __name__ == "__main__":
                 writer.writerow([t, f"{r:.3f}"])
 
                 if r > best_wr:
-                    best_wr = r
+                    best_wr   = r
                     best_ckpt = pth
 
         print(f"Wrote PPO results to {out_csv}")
 
-        # copy best checkpoint
         if best_ckpt:
             dst = os.path.join(PROJECT_ROOT, "best_weight", "ppo", f"hex_{B}")
             os.makedirs(dst, exist_ok=True)
             shutil.copy(best_ckpt, dst)
-            print(f"→ Best PPO @{os.path.basename(best_ckpt)} (win={best_wr:.3f}) copied to {dst}")
+            print(f"→ Best PPO @{os.path.basename(best_ckpt)} (win={best_wr:.3f}) → {dst}")
+
+
+if __name__ == "__main__":
+    main()

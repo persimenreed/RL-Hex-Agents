@@ -43,7 +43,7 @@ def evaluate_vs_mcts(game, agent, mcts_bot, pid, num_games=100):
 
 
 class EvalMCTSBot:
-    def __init__(self, game, sims=100):
+    def __init__(self, game, sims=20):
         self.bot = mcts.MCTSBot(
             game, 1.0, sims,
             mcts.RandomRolloutEvaluator(),
@@ -81,8 +81,8 @@ class EvalNFSPAgent:
         saver.restore(self.sess, avg_prefix)
 
     def act(self, state):
-        obs  = np.array(state.observation_tensor(), dtype=np.float32)
-        info = obs.reshape(1, -1)
+        obs   = np.array(state.observation_tensor(), dtype=np.float32)
+        info  = obs.reshape(1, -1)
         probs = self.sess.run(
             self.agent._avg_policy_probs,
             feed_dict={self.agent._info_state_ph: info}
@@ -92,16 +92,16 @@ class EvalNFSPAgent:
         return int(np.argmax(probs * mask))
 
 
-if __name__ == "__main__":
+def main():
     for B in [5, 8, 11]:
         print(f"\n=== Board size {B} ===")
         game      = pyspiel.load_game(f"hex(board_size={B})")
-        sims      = {5:100, 8:100, 11:100}[B]
+        sims      = {5:50, 8:50, 11:50}[B]
         mcts_bot  = EvalMCTSBot(game, sims)
         obs_dim   = game.observation_tensor_size()
         n_actions = game.num_distinct_actions()
 
-        # 1) load existing CSV
+        # 1) load existing CSV (must exist with headers: timestamp_s, ppo_mcts_win, az_mcts_win, etc.)
         csv_path = os.path.join(PROJECT_ROOT, "evaluation", f"eval_{B}.csv")
         with open(csv_path, newline="") as f:
             reader = csv.reader(f)
@@ -109,33 +109,30 @@ if __name__ == "__main__":
             rows   = list(reader)
 
         # 2) append new columns if missing
-        cols = ["nfsp0_mcts_win", "nfsp1_mcts_win"]
-        if all(c in header for c in cols):
+        nfsp_cols = ["nfsp0_mcts_win", "nfsp1_mcts_win"]
+        if all(c in header for c in nfsp_cols):
             print(f"  → {csv_path} already has NFSP columns, skipping.")
             continue
-        header.extend(cols)
+        header.extend(nfsp_cols)
 
-        # 3) gather sorted avg-network prefixes for each pid
+        # 3) collect sorted avg-network prefixes for each pid
         ckpt_dir = os.path.join(PROJECT_ROOT, "weights", "nfsp", f"nfsp_hex_{B}_4h")
-        avg0 = sorted(
-            glob.glob(os.path.join(ckpt_dir, "avg_network_pid0_*s.ckpt.index")),
-            key=lambda p: int(os.path.basename(p).split('_')[-1].replace('s.ckpt.index',''))
-        )
-        avg1 = sorted(
-            glob.glob(os.path.join(ckpt_dir, "avg_network_pid1_*s.ckpt.index")),
-            key=lambda p: int(os.path.basename(p).split('_')[-1].replace('s.ckpt.index',''))
-        )
-        # strip the ".index" to get prefixes
-        avg0 = [p[:-len(".index")] for p in avg0]
-        avg1 = [p[:-len(".index")] for p in avg1]
+        def ts_from_path(p): 
+            return int(os.path.basename(p).split('_')[-1].replace('s.ckpt.index',''))
+        avg0_idx = sorted(glob.glob(os.path.join(ckpt_dir, "avg_network_pid0_*s.ckpt.index")),
+                          key=ts_from_path)
+        avg1_idx = sorted(glob.glob(os.path.join(ckpt_dir, "avg_network_pid1_*s.ckpt.index")),
+                          key=ts_from_path)
+        avg0 = [p[:-len(".index")] for p in avg0_idx]
+        avg1 = [p[:-len(".index")] for p in avg1_idx]
 
         if len(avg0) < len(rows) or len(avg1) < len(rows):
             raise RuntimeError(
-                f"Not enough avg_network ckpts (p0:{len(avg0)}, p1:{len(avg1)}) "
-                f"for {len(rows)} rows in {csv_path}"
+                f"Not enough NFSP checkpoints for B={B}: "
+                f"p0={len(avg0)}, p1={len(avg1)}, rows={len(rows)}"
             )
 
-        # 4) evaluate
+        # 4) evaluate and track best single-agent
         best_wr   = -1.0
         best_pid  = None
         best_ts   = None
@@ -148,7 +145,7 @@ if __name__ == "__main__":
             for i, row in enumerate(rows):
                 pre0 = avg0[i]
                 pre1 = avg1[i]
-                ts   = os.path.basename(pre0).split('_')[-1].replace('s.ckpt','')
+                ts   = ts_from_path(pre0 + ".index")
 
                 agent0.restore_avg(pre0)
                 r0 = evaluate_vs_mcts(game, agent0, mcts_bot, pid=0)
@@ -158,7 +155,6 @@ if __name__ == "__main__":
                 row.extend([f"{r0:.3f}", f"{r1:.3f}"])
                 print(f"   [{i+1}/{len(rows)}] @{ts}s → p0 {r0:.3f}, p1 {r1:.3f}")
 
-                # track best single-agent
                 if r0 > best_wr:
                     best_wr, best_pid, best_ts = r0, 0, ts
                 if r1 > best_wr:
@@ -171,10 +167,14 @@ if __name__ == "__main__":
             writer.writerows(rows)
         print(f"  → updated {csv_path}")
 
-        # 6) copy best avg+q for best_pid at best_ts
+        # 6) copy best avg+q into best_weight
         dst = os.path.join(PROJECT_ROOT, "best_weight", "nfsp", f"hex_{B}")
         os.makedirs(dst, exist_ok=True)
         pattern = os.path.join(ckpt_dir, f"*pid{best_pid}_{best_ts}s.ckpt*")
         for fn in glob.glob(pattern):
             shutil.copy(fn, dst)
         print(f"  → best NFSP pid{best_pid}@{best_ts}s (win={best_wr:.3f}) copied to {dst}")
+
+
+if __name__ == "__main__":
+    main()
