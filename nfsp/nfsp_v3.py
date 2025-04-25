@@ -19,7 +19,7 @@ np.random.seed(SEED)
 
 TRAIN_HOURS   = 4
 MAX_TRAIN_SEC = TRAIN_HOURS * 3600.0
-BOARD_SIZES   = [5, 8, 11]
+BOARD_SIZES   = [11]
 
 # Tunable hyper‑params per board size
 ETAS           = {5: 0.1, 8: 0.1, 11: 0.1}

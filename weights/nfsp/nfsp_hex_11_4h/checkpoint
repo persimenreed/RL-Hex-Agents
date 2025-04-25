@@ -1,0 +1,2 @@
+model_checkpoint_path: "nfsp_hex_p1_14400s.ckpt"
+all_model_checkpoint_paths: "nfsp_hex_p1_14400s.ckpt"

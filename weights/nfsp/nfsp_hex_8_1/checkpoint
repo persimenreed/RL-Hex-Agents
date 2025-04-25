@@ -1,2 +1,0 @@
-model_checkpoint_path: "nfsp_hex_p1_60s.ckpt"
-all_model_checkpoint_paths: "nfsp_hex_p1_60s.ckpt"
