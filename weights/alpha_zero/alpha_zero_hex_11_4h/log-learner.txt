@@ -1,0 +1,275 @@
+[2025-04-24 23:06:08.665] learner started
+[2025-04-24 23:06:08.665] Initializing model
+[2025-04-24 23:06:08.891] Model type: mlp(64, 2)
+[2025-04-24 23:06:08.891] Model size: 90170 variables
+[2025-04-24 23:06:08.930] Initial checkpoint: ./weights/alpha_zero/alpha_zero_hex_11_4h/checkpoint-0
+[2025-04-24 23:12:08.203] Step: 1
+[2025-04-24 23:12:08.203] Collected 16702 states from 170 games, 39.8 states/s. 19.9 states/(s*actor), game length: 98.2
+[2025-04-24 23:12:08.206] Buffer size: 16702. States seen: 16702
+[2025-04-24 23:12:10.567] Losses(total: 5.192, policy: 4.146, value: 1.028, l2: 0.019)
+[2025-04-24 23:12:10.567] Checkpoint saved: ./weights/alpha_zero/alpha_zero_hex_11_4h/checkpoint-1
+[2025-04-24 23:12:10.569]
+[2025-04-24 23:17:22.228] Step: 2
+[2025-04-24 23:17:22.228] Collected 16717 states from 156 games, 53.2 states/s. 26.6 states/(s*actor), game length: 107.2
+[2025-04-24 23:17:22.228] Buffer size: 33419. States seen: 33419
+[2025-04-24 23:17:26.584] Losses(total: 4.371, policy: 4.040, value: 0.296, l2: 0.035)
+[2025-04-24 23:17:26.584] Checkpoint saved: ./weights/alpha_zero/alpha_zero_hex_11_4h/checkpoint-2
+[2025-04-24 23:17:26.586]
+[2025-04-24 23:22:38.611] Step: 3
+[2025-04-24 23:22:38.611] Collected 16705 states from 169 games, 52.8 states/s. 26.4 states/(s*actor), game length: 98.8
+[2025-04-24 23:22:38.611] Buffer size: 50000. States seen: 50124
+[2025-04-24 23:22:45.156] Losses(total: 4.294, policy: 4.014, value: 0.232, l2: 0.049)
+[2025-04-24 23:22:45.156] Checkpoint saved: ./weights/alpha_zero/alpha_zero_hex_11_4h/checkpoint-3
+[2025-04-24 23:22:45.157]
+[2025-04-24 23:27:45.129] Step: 4
+[2025-04-24 23:27:45.129] Collected 16680 states from 173 games, 54.4 states/s. 27.2 states/(s*actor), game length: 96.4
+[2025-04-24 23:27:45.129] Buffer size: 50000. States seen: 66804
+[2025-04-24 23:27:51.867] Losses(total: 4.263, policy: 3.943, value: 0.257, l2: 0.064)
+[2025-04-24 23:27:51.867] Checkpoint saved: ./weights/alpha_zero/alpha_zero_hex_11_4h/checkpoint-4
+[2025-04-24 23:27:51.869]
+[2025-04-24 23:33:04.068] Step: 5
+[2025-04-24 23:33:04.068] Collected 16742 states from 165 games, 52.5 states/s. 26.2 states/(s*actor), game length: 101.5
+[2025-04-24 23:33:04.068] Buffer size: 50000. States seen: 83546
+[2025-04-24 23:33:10.751] Losses(total: 4.281, policy: 3.946, value: 0.262, l2: 0.073)
+[2025-04-24 23:33:10.751] Checkpoint saved: ./weights/alpha_zero/alpha_zero_hex_11_4h/checkpoint-5
+[2025-04-24 23:33:10.752]
+[2025-04-24 23:38:21.669] Step: 6
+[2025-04-24 23:38:21.669] Collected 16763 states from 170 games, 52.8 states/s. 26.4 states/(s*actor), game length: 98.6
+[2025-04-24 23:38:21.670] Buffer size: 50000. States seen: 100309
+[2025-04-24 23:38:28.104] Losses(total: 4.301, policy: 3.925, value: 0.294, l2: 0.081)
+[2025-04-24 23:38:28.104] Checkpoint saved: ./weights/alpha_zero/alpha_zero_hex_11_4h/checkpoint-6
+[2025-04-24 23:38:28.105]
+[2025-04-24 23:43:51.085] Step: 7
+[2025-04-24 23:43:51.085] Collected 16693 states from 185 games, 50.7 states/s. 25.3 states/(s*actor), game length: 90.2
+[2025-04-24 23:43:51.085] Buffer size: 50000. States seen: 117002
+[2025-04-24 23:43:57.501] Losses(total: 4.307, policy: 3.922, value: 0.299, l2: 0.086)
+[2025-04-24 23:43:57.501] Checkpoint saved: ./weights/alpha_zero/alpha_zero_hex_11_4h/checkpoint-7
+[2025-04-24 23:43:57.502]
+[2025-04-24 23:49:20.753] Step: 8
+[2025-04-24 23:49:20.753] Collected 16675 states from 177 games, 50.6 states/s. 25.3 states/(s*actor), game length: 94.2
+[2025-04-24 23:49:20.753] Buffer size: 50000. States seen: 133677
+[2025-04-24 23:49:27.198] Losses(total: 4.305, policy: 3.927, value: 0.288, l2: 0.090)
+[2025-04-24 23:49:27.198] Checkpoint saved: ./weights/alpha_zero/alpha_zero_hex_11_4h/checkpoint-8
+[2025-04-24 23:49:27.199]
+[2025-04-24 23:54:40.881] Step: 9
+[2025-04-24 23:54:40.881] Collected 16677 states from 180 games, 52.1 states/s. 26.0 states/(s*actor), game length: 92.7
+[2025-04-24 23:54:40.881] Buffer size: 50000. States seen: 150354
+[2025-04-24 23:54:47.482] Losses(total: 4.336, policy: 3.934, value: 0.308, l2: 0.094)
+[2025-04-24 23:54:47.482] Checkpoint saved: ./weights/alpha_zero/alpha_zero_hex_11_4h/checkpoint-9
+[2025-04-24 23:54:47.483]
+[2025-04-25 00:00:03.337] Step: 10
+[2025-04-25 00:00:03.337] Collected 16734 states from 179 games, 51.9 states/s. 25.9 states/(s*actor), game length: 93.5
+[2025-04-25 00:00:03.337] Buffer size: 50000. States seen: 167088
+[2025-04-25 00:00:09.888] Losses(total: 4.288, policy: 3.900, value: 0.291, l2: 0.097)
+[2025-04-25 00:00:09.888] Checkpoint saved: ./weights/alpha_zero/alpha_zero_hex_11_4h/checkpoint-10
+[2025-04-25 00:00:09.890]
+[2025-04-25 00:05:32.585] Step: 11
+[2025-04-25 00:05:32.585] Collected 16718 states from 177 games, 50.8 states/s. 25.4 states/(s*actor), game length: 94.5
+[2025-04-25 00:05:32.585] Buffer size: 50000. States seen: 183806
+[2025-04-25 00:05:39.215] Losses(total: 4.295, policy: 3.892, value: 0.303, l2: 0.100)
+[2025-04-25 00:05:39.215] Checkpoint saved: ./weights/alpha_zero/alpha_zero_hex_11_4h/checkpoint-11
+[2025-04-25 00:05:39.216]
+[2025-04-25 00:10:57.602] Step: 12
+[2025-04-25 00:10:57.603] Collected 16671 states from 176 games, 51.3 states/s. 25.6 states/(s*actor), game length: 94.7
+[2025-04-25 00:10:57.603] Buffer size: 50000. States seen: 200477
+[2025-04-25 00:11:04.088] Losses(total: 4.278, policy: 3.901, value: 0.274, l2: 0.104)
+[2025-04-25 00:11:04.088] Checkpoint saved: ./weights/alpha_zero/alpha_zero_hex_11_4h/checkpoint-12
+[2025-04-25 00:11:04.089]
+[2025-04-25 00:16:17.722] Step: 13
+[2025-04-25 00:16:17.722] Collected 16686 states from 170 games, 52.1 states/s. 26.1 states/(s*actor), game length: 98.2
+[2025-04-25 00:16:17.722] Buffer size: 50000. States seen: 217163
+[2025-04-25 00:16:24.251] Losses(total: 4.282, policy: 3.897, value: 0.279, l2: 0.106)
+[2025-04-25 00:16:24.251] Checkpoint saved: ./weights/alpha_zero/alpha_zero_hex_11_4h/checkpoint-13
+[2025-04-25 00:16:24.253]
+[2025-04-25 00:21:39.514] Step: 14
+[2025-04-25 00:21:39.515] Collected 16716 states from 177 games, 51.9 states/s. 26.0 states/(s*actor), game length: 94.4
+[2025-04-25 00:21:39.515] Buffer size: 50000. States seen: 233879
+[2025-04-25 00:21:46.104] Losses(total: 4.285, policy: 3.900, value: 0.279, l2: 0.106)
+[2025-04-25 00:21:46.104] Checkpoint saved: ./weights/alpha_zero/alpha_zero_hex_11_4h/checkpoint-14
+[2025-04-25 00:21:46.105]
+[2025-04-25 00:27:06.641] Step: 15
+[2025-04-25 00:27:06.641] Collected 16716 states from 182 games, 51.1 states/s. 25.5 states/(s*actor), game length: 91.8
+[2025-04-25 00:27:06.641] Buffer size: 50000. States seen: 250595
+[2025-04-25 00:27:13.000] Losses(total: 4.300, policy: 3.895, value: 0.301, l2: 0.104)
+[2025-04-25 00:27:13.000] Checkpoint saved: ./weights/alpha_zero/alpha_zero_hex_11_4h/checkpoint-15
+[2025-04-25 00:27:13.001]
+[2025-04-25 00:32:24.806] Step: 16
+[2025-04-25 00:32:24.807] Collected 16678 states from 187 games, 52.4 states/s. 26.2 states/(s*actor), game length: 89.2
+[2025-04-25 00:32:24.807] Buffer size: 50000. States seen: 267273
+[2025-04-25 00:32:31.140] Losses(total: 4.320, policy: 3.912, value: 0.302, l2: 0.107)
+[2025-04-25 00:32:31.140] Checkpoint saved: ./weights/alpha_zero/alpha_zero_hex_11_4h/checkpoint-16
+[2025-04-25 00:32:31.141]
+[2025-04-25 00:37:55.627] Step: 17
+[2025-04-25 00:37:55.627] Collected 16714 states from 183 games, 50.5 states/s. 25.3 states/(s*actor), game length: 91.3
+[2025-04-25 00:37:55.627] Buffer size: 50000. States seen: 283987
+[2025-04-25 00:38:01.994] Losses(total: 4.310, policy: 3.919, value: 0.284, l2: 0.107)
+[2025-04-25 00:38:01.994] Checkpoint saved: ./weights/alpha_zero/alpha_zero_hex_11_4h/checkpoint-17
+[2025-04-25 00:38:01.995]
+[2025-04-25 00:43:14.706] Step: 18
+[2025-04-25 00:43:14.706] Collected 16701 states from 188 games, 52.3 states/s. 26.2 states/(s*actor), game length: 88.8
+[2025-04-25 00:43:14.706] Buffer size: 50000. States seen: 300688
+[2025-04-25 00:43:21.098] Losses(total: 4.307, policy: 3.923, value: 0.278, l2: 0.107)
+[2025-04-25 00:43:21.099] Checkpoint saved: ./weights/alpha_zero/alpha_zero_hex_11_4h/checkpoint-18
+[2025-04-25 00:43:21.100]
+[2025-04-25 00:48:37.955] Step: 19
+[2025-04-25 00:48:37.955] Collected 16704 states from 189 games, 51.7 states/s. 25.8 states/(s*actor), game length: 88.4
+[2025-04-25 00:48:37.955] Buffer size: 50000. States seen: 317392
+[2025-04-25 00:48:44.455] Losses(total: 4.325, policy: 3.915, value: 0.303, l2: 0.107)
+[2025-04-25 00:48:44.455] Checkpoint saved: ./weights/alpha_zero/alpha_zero_hex_11_4h/checkpoint-19
+[2025-04-25 00:48:44.456]
+[2025-04-25 00:53:48.247] Step: 20
+[2025-04-25 00:53:48.247] Collected 16753 states from 202 games, 54.0 states/s. 27.0 states/(s*actor), game length: 82.9
+[2025-04-25 00:53:48.247] Buffer size: 50000. States seen: 334145
+[2025-04-25 00:53:54.649] Losses(total: 4.336, policy: 3.913, value: 0.318, l2: 0.105)
+[2025-04-25 00:53:54.649] Checkpoint saved: ./weights/alpha_zero/alpha_zero_hex_11_4h/checkpoint-20
+[2025-04-25 00:53:54.650]
+[2025-04-25 00:59:14.150] Step: 21
+[2025-04-25 00:59:14.150] Collected 16679 states from 184 games, 51.2 states/s. 25.6 states/(s*actor), game length: 90.6
+[2025-04-25 00:59:14.150] Buffer size: 50000. States seen: 350824
+[2025-04-25 00:59:20.491] Losses(total: 4.333, policy: 3.908, value: 0.319, l2: 0.105)
+[2025-04-25 00:59:20.492] Checkpoint saved: ./weights/alpha_zero/alpha_zero_hex_11_4h/checkpoint-21
+[2025-04-25 00:59:20.493]
+[2025-04-25 01:04:37.338] Step: 22
+[2025-04-25 01:04:37.339] Collected 16710 states from 187 games, 51.7 states/s. 25.9 states/(s*actor), game length: 89.4
+[2025-04-25 01:04:37.339] Buffer size: 50000. States seen: 367534
+[2025-04-25 01:04:43.808] Losses(total: 4.295, policy: 3.889, value: 0.301, l2: 0.106)
+[2025-04-25 01:04:43.808] Checkpoint saved: ./weights/alpha_zero/alpha_zero_hex_11_4h/checkpoint-22
+[2025-04-25 01:04:43.808]
+[2025-04-25 01:10:01.508] Step: 23
+[2025-04-25 01:10:01.508] Collected 16672 states from 189 games, 51.4 states/s. 25.7 states/(s*actor), game length: 88.2
+[2025-04-25 01:10:01.508] Buffer size: 50000. States seen: 384206
+[2025-04-25 01:10:08.079] Losses(total: 4.301, policy: 3.889, value: 0.306, l2: 0.106)
+[2025-04-25 01:10:08.079] Checkpoint saved: ./weights/alpha_zero/alpha_zero_hex_11_4h/checkpoint-23
+[2025-04-25 01:10:08.080]
+[2025-04-25 01:15:12.298] Step: 24
+[2025-04-25 01:15:12.298] Collected 16667 states from 187 games, 53.6 states/s. 26.8 states/(s*actor), game length: 89.1
+[2025-04-25 01:15:12.298] Buffer size: 50000. States seen: 400873
+[2025-04-25 01:15:18.857] Losses(total: 4.269, policy: 3.880, value: 0.284, l2: 0.106)
+[2025-04-25 01:15:18.857] Checkpoint saved: ./weights/alpha_zero/alpha_zero_hex_11_4h/checkpoint-24
+[2025-04-25 01:15:18.858]
+[2025-04-25 01:20:26.200] Step: 25
+[2025-04-25 01:20:26.201] Collected 16729 states from 181 games, 53.3 states/s. 26.6 states/(s*actor), game length: 92.4
+[2025-04-25 01:20:26.201] Buffer size: 50000. States seen: 417602
+[2025-04-25 01:20:32.875] Losses(total: 4.262, policy: 3.855, value: 0.301, l2: 0.106)
+[2025-04-25 01:20:32.875] Checkpoint saved: ./weights/alpha_zero/alpha_zero_hex_11_4h/checkpoint-25
+[2025-04-25 01:20:32.876]
+[2025-04-25 01:25:37.783] Step: 26
+[2025-04-25 01:25:37.783] Collected 16711 states from 187 games, 53.6 states/s. 26.8 states/(s*actor), game length: 89.4
+[2025-04-25 01:25:37.783] Buffer size: 50000. States seen: 434313
+[2025-04-25 01:25:44.297] Losses(total: 4.242, policy: 3.842, value: 0.296, l2: 0.104)
+[2025-04-25 01:25:44.297] Checkpoint saved: ./weights/alpha_zero/alpha_zero_hex_11_4h/checkpoint-26
+[2025-04-25 01:25:44.298]
+[2025-04-25 01:31:05.611] Step: 27
+[2025-04-25 01:31:05.611] Collected 16728 states from 189 games, 51.0 states/s. 25.5 states/(s*actor), game length: 88.5
+[2025-04-25 01:31:05.611] Buffer size: 50000. States seen: 451041
+[2025-04-25 01:31:11.782] Losses(total: 4.244, policy: 3.836, value: 0.305, l2: 0.103)
+[2025-04-25 01:31:11.782] Checkpoint saved: ./weights/alpha_zero/alpha_zero_hex_11_4h/checkpoint-27
+[2025-04-25 01:31:11.783]
+[2025-04-25 01:36:34.145] Step: 28
+[2025-04-25 01:36:34.145] Collected 16754 states from 181 games, 51.0 states/s. 25.5 states/(s*actor), game length: 92.6
+[2025-04-25 01:36:34.145] Buffer size: 50000. States seen: 467795
+[2025-04-25 01:36:40.560] Losses(total: 4.262, policy: 3.865, value: 0.293, l2: 0.104)
+[2025-04-25 01:36:40.560] Checkpoint saved: ./weights/alpha_zero/alpha_zero_hex_11_4h/checkpoint-28
+[2025-04-25 01:36:40.561]
+[2025-04-25 01:41:59.288] Step: 29
+[2025-04-25 01:41:59.288] Collected 16706 states from 176 games, 51.4 states/s. 25.7 states/(s*actor), game length: 94.9
+[2025-04-25 01:41:59.288] Buffer size: 50000. States seen: 484501
+[2025-04-25 01:42:05.705] Losses(total: 4.279, policy: 3.868, value: 0.307, l2: 0.103)
+[2025-04-25 01:42:05.705] Checkpoint saved: ./weights/alpha_zero/alpha_zero_hex_11_4h/checkpoint-29
+[2025-04-25 01:42:05.705]
+[2025-04-25 01:47:16.994] Step: 30
+[2025-04-25 01:47:16.994] Collected 16679 states from 184 games, 52.5 states/s. 26.2 states/(s*actor), game length: 90.6
+[2025-04-25 01:47:16.994] Buffer size: 50000. States seen: 501180
+[2025-04-25 01:47:23.396] Losses(total: 4.277, policy: 3.880, value: 0.294, l2: 0.103)
+[2025-04-25 01:47:23.396] Checkpoint saved: ./weights/alpha_zero/alpha_zero_hex_11_4h/checkpoint-30
+[2025-04-25 01:47:23.397]
+[2025-04-25 01:52:44.376] Step: 31
+[2025-04-25 01:52:44.376] Collected 16775 states from 181 games, 51.2 states/s. 25.6 states/(s*actor), game length: 92.7
+[2025-04-25 01:52:44.376] Buffer size: 50000. States seen: 517955
+[2025-04-25 01:52:50.576] Losses(total: 4.262, policy: 3.882, value: 0.277, l2: 0.103)
+[2025-04-25 01:52:50.576] Checkpoint saved: ./weights/alpha_zero/alpha_zero_hex_11_4h/checkpoint-31
+[2025-04-25 01:52:50.577]
+[2025-04-25 01:58:14.430] Step: 32
+[2025-04-25 01:58:14.430] Collected 16724 states from 181 games, 50.7 states/s. 25.3 states/(s*actor), game length: 92.4
+[2025-04-25 01:58:14.430] Buffer size: 50000. States seen: 534679
+[2025-04-25 01:58:20.883] Losses(total: 4.287, policy: 3.896, value: 0.288, l2: 0.103)
+[2025-04-25 01:58:20.883] Checkpoint saved: ./weights/alpha_zero/alpha_zero_hex_11_4h/checkpoint-32
+[2025-04-25 01:58:20.884]
+[2025-04-25 02:03:46.429] Step: 33
+[2025-04-25 02:03:46.430] Collected 16715 states from 190 games, 50.3 states/s. 25.2 states/(s*actor), game length: 88.0
+[2025-04-25 02:03:46.430] Buffer size: 50000. States seen: 551394
+[2025-04-25 02:03:52.901] Losses(total: 4.301, policy: 3.901, value: 0.296, l2: 0.104)
+[2025-04-25 02:03:52.901] Checkpoint saved: ./weights/alpha_zero/alpha_zero_hex_11_4h/checkpoint-33
+[2025-04-25 02:03:52.902]
+[2025-04-25 02:09:21.129] Step: 34
+[2025-04-25 02:09:21.129] Collected 16717 states from 191 games, 49.9 states/s. 25.0 states/(s*actor), game length: 87.5
+[2025-04-25 02:09:21.129] Buffer size: 50000. States seen: 568111
+[2025-04-25 02:09:27.498] Losses(total: 4.323, policy: 3.919, value: 0.299, l2: 0.104)
+[2025-04-25 02:09:27.498] Checkpoint saved: ./weights/alpha_zero/alpha_zero_hex_11_4h/checkpoint-34
+[2025-04-25 02:09:27.499]
+[2025-04-25 02:14:53.891] Step: 35
+[2025-04-25 02:14:53.891] Collected 16743 states from 190 games, 50.3 states/s. 25.2 states/(s*actor), game length: 88.1
+[2025-04-25 02:14:53.891] Buffer size: 50000. States seen: 584854
+[2025-04-25 02:15:00.348] Losses(total: 4.336, policy: 3.942, value: 0.291, l2: 0.103)
+[2025-04-25 02:15:00.348] Checkpoint saved: ./weights/alpha_zero/alpha_zero_hex_11_4h/checkpoint-35
+[2025-04-25 02:15:00.349]
+[2025-04-25 02:20:16.063] Step: 36
+[2025-04-25 02:20:16.064] Collected 16721 states from 186 games, 51.9 states/s. 26.0 states/(s*actor), game length: 89.9
+[2025-04-25 02:20:16.064] Buffer size: 50000. States seen: 601575
+[2025-04-25 02:20:22.483] Losses(total: 4.329, policy: 3.924, value: 0.304, l2: 0.101)
+[2025-04-25 02:20:22.483] Checkpoint saved: ./weights/alpha_zero/alpha_zero_hex_11_4h/checkpoint-36
+[2025-04-25 02:20:22.484]
+[2025-04-25 02:25:47.673] Step: 37
+[2025-04-25 02:25:47.674] Collected 16694 states from 192 games, 50.3 states/s. 25.2 states/(s*actor), game length: 86.9
+[2025-04-25 02:25:47.674] Buffer size: 50000. States seen: 618269
+[2025-04-25 02:25:54.087] Losses(total: 4.364, policy: 3.933, value: 0.330, l2: 0.100)
+[2025-04-25 02:25:54.087] Checkpoint saved: ./weights/alpha_zero/alpha_zero_hex_11_4h/checkpoint-37
+[2025-04-25 02:25:54.088]
+[2025-04-25 02:31:17.078] Step: 38
+[2025-04-25 02:31:17.078] Collected 16677 states from 190 games, 50.6 states/s. 25.3 states/(s*actor), game length: 87.8
+[2025-04-25 02:31:17.078] Buffer size: 50000. States seen: 634946
+[2025-04-25 02:31:23.557] Losses(total: 4.335, policy: 3.914, value: 0.320, l2: 0.101)
+[2025-04-25 02:31:23.558] Checkpoint saved: ./weights/alpha_zero/alpha_zero_hex_11_4h/checkpoint-38
+[2025-04-25 02:31:23.558]
+[2025-04-25 02:36:41.913] Step: 39
+[2025-04-25 02:36:41.913] Collected 16684 states from 193 games, 51.4 states/s. 25.7 states/(s*actor), game length: 86.4
+[2025-04-25 02:36:41.913] Buffer size: 50000. States seen: 651630
+[2025-04-25 02:36:48.470] Losses(total: 4.366, policy: 3.931, value: 0.334, l2: 0.101)
+[2025-04-25 02:36:48.470] Checkpoint saved: ./weights/alpha_zero/alpha_zero_hex_11_4h/checkpoint-39
+[2025-04-25 02:36:48.471]
+[2025-04-25 02:41:57.937] Step: 40
+[2025-04-25 02:41:57.937] Collected 16757 states from 189 games, 53.0 states/s. 26.5 states/(s*actor), game length: 88.7
+[2025-04-25 02:41:57.937] Buffer size: 50000. States seen: 668387
+[2025-04-25 02:42:04.275] Losses(total: 4.345, policy: 3.920, value: 0.322, l2: 0.103)
+[2025-04-25 02:42:04.276] Checkpoint saved: ./weights/alpha_zero/alpha_zero_hex_11_4h/checkpoint-40
+[2025-04-25 02:42:04.276]
+[2025-04-25 02:47:21.532] Step: 41
+[2025-04-25 02:47:21.532] Collected 16706 states from 182 games, 51.6 states/s. 25.8 states/(s*actor), game length: 91.8
+[2025-04-25 02:47:21.532] Buffer size: 50000. States seen: 685093
+[2025-04-25 02:47:28.165] Losses(total: 4.319, policy: 3.905, value: 0.308, l2: 0.106)
+[2025-04-25 02:47:28.165] Checkpoint saved: ./weights/alpha_zero/alpha_zero_hex_11_4h/checkpoint-41
+[2025-04-25 02:47:28.165]
+[2025-04-25 02:52:40.688] Step: 42
+[2025-04-25 02:52:40.688] Collected 16716 states from 180 games, 52.4 states/s. 26.2 states/(s*actor), game length: 92.9
+[2025-04-25 02:52:40.688] Buffer size: 50000. States seen: 701809
+[2025-04-25 02:52:47.180] Losses(total: 4.297, policy: 3.900, value: 0.290, l2: 0.106)
+[2025-04-25 02:52:47.180] Checkpoint saved: ./weights/alpha_zero/alpha_zero_hex_11_4h/checkpoint-42
+[2025-04-25 02:52:47.181]
+[2025-04-25 02:58:07.179] Step: 43
+[2025-04-25 02:58:07.179] Collected 16684 states from 177 games, 51.1 states/s. 25.6 states/(s*actor), game length: 94.3
+[2025-04-25 02:58:07.179] Buffer size: 50000. States seen: 718493
+[2025-04-25 02:58:13.685] Losses(total: 4.298, policy: 3.907, value: 0.285, l2: 0.106)
+[2025-04-25 02:58:13.685] Checkpoint saved: ./weights/alpha_zero/alpha_zero_hex_11_4h/checkpoint-43
+[2025-04-25 02:58:13.686]
+[2025-04-25 03:03:25.162] Step: 44
+[2025-04-25 03:03:25.162] Collected 16763 states from 178 games, 52.7 states/s. 26.4 states/(s*actor), game length: 94.2
+[2025-04-25 03:03:25.162] Buffer size: 50000. States seen: 735256
+[2025-04-25 03:03:31.759] Losses(total: 4.290, policy: 3.901, value: 0.284, l2: 0.106)
+[2025-04-25 03:03:31.759] Checkpoint saved: ./weights/alpha_zero/alpha_zero_hex_11_4h/checkpoint-44
+[2025-04-25 03:03:31.760]
+[2025-04-25 03:08:55.718] Step: 45
+[2025-04-25 03:08:55.718] Collected 16745 states from 181 games, 50.7 states/s. 25.3 states/(s*actor), game length: 92.5
+[2025-04-25 03:08:55.718] Buffer size: 50000. States seen: 752001
+[2025-04-25 03:09:02.171] Losses(total: 4.302, policy: 3.897, value: 0.298, l2: 0.107)
+[2025-04-25 03:09:02.172] Checkpoint saved: ./weights/alpha_zero/alpha_zero_hex_11_4h/checkpoint-45
+[2025-04-25 03:09:02.172]

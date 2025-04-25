@@ -20,9 +20,9 @@ Thumbs.db
 *.tmp
 
 # Ignore logs during training
-**/log-actor-*
-**/log-evaluator-*
-**/log-learner*
+#**/log-actor-*
+#**/log-evaluator-*
+#**/log-learner*
 
 # ingore weights
 #weights/
