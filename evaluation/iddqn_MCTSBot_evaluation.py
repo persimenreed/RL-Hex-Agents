@@ -19,12 +19,12 @@ from open_spiel.python.algorithms import mcts
 BOARD_SIZE  = 5
 HIDDEN_SIZE = 128   # must match iddqn_v1’s hidden size for BOARD_SIZE
 MCTS_GAMES  = 100
-MCTS_SIMS   = {5: 2, 8: 500, 11: 1000}[BOARD_SIZE]
-#SEED        = 42
+MCTS_SIMS   = {5: 100, 8: 100, 11: 100}[BOARD_SIZE]
+SEED        = 42
 
-#random.seed(SEED)
-#np.random.seed(SEED)
-#torch.manual_seed(SEED)
+random.seed(SEED)
+np.random.seed(SEED)
+torch.manual_seed(SEED)
 
 SNAPSHOT_DIR = os.path.join(ROOT, "weights", "iddqn", f"iddqn_hex_{BOARD_SIZE}_4h")
 EVAL_CSV     = os.path.join(ROOT, "evaluation", f"iddqn_eval_{BOARD_SIZE}.csv")
