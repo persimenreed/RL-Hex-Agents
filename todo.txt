@@ -1,10 +1,4 @@
-#1: implement iddqn
-
-#2: optimize hyperparameters
-
-#3: define evaluation methods
-
-4: Train models
+4: retrain nfsp
 
 5: Evaluate performance
 

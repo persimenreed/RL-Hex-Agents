@@ -1,3 +1,5 @@
+# nfsp_v11.py
+
 import os
 import random
 import time
@@ -10,17 +12,24 @@ from open_spiel.python import rl_environment
 
 tf.disable_v2_behavior()
 
-# ───────────────── Configuration ──────────────────
+# ─────────────────── Config ────────────────────
 SEED = 42
 random.seed(SEED)
 np.random.seed(SEED)
 
-TRAIN_HOURS           = 4
-MAX_TRAIN_SEC         = TRAIN_HOURS * 3600.0
-BOARD_SIZES           = [5, 8, 11]
-ETA_START, ETA_END    = 0.9, 0.1
-EPS_START, EPS_END    = 1.0, 0.05
+TRAIN_HOURS   = 4
+MAX_TRAIN_SEC = TRAIN_HOURS * 3600.0
+BOARD_SIZES   = [11]
 
+# Tunable hyper‑params per board size
+ETAS           = {5: 0.1, 8: 0.1, 11: 0.1}
+RL_LRS         = {5: 1e-2, 8: 1e-2, 11: 1e-3}
+SL_LRS         = {5: 1e-3, 8: 1e-3, 11: 1e-4}
+RESERVOIRS     = {5: 100_000, 8: 300_000, 11: 500_000}
+HIDDEN_SIZES   = {5: [64,64], 8: [128,128], 11: [128,128]}
+
+EPS_START      = 1.0
+EPS_END        = 0.05
 SNAPSHOT_INTERVAL_SEC = 600
 LOG_INTERVAL_SEC      = 60.0
 
@@ -32,9 +41,15 @@ def compute_epsilon(elapsed):
 
 for b in BOARD_SIZES:
     print(f"Starting NFSP training with board size {b}×{b}")
+    eta       = ETAS[b]
+    rl_lr     = RL_LRS[b]
+    sl_lr     = SL_LRS[b]
+    reservoir = RESERVOIRS[b]
+    hids      = HIDDEN_SIZES[b]
+
     root     = f"./weights/nfsp/nfsp_hex_{b}_{TRAIN_HOURS}h"
     os.makedirs(root, exist_ok=True)
-    meta_csv = os.path.join(root, "metadata.csv")
+    meta_csv = os.path.join(root, f"metadata{b}x{b}.csv")
 
     with open(meta_csv, "w", newline="") as f:
         writer = csv.writer(f)
@@ -43,38 +58,40 @@ for b in BOARD_SIZES:
         game = pyspiel.load_game(f"hex(board_size={b})")
         env  = rl_environment.Environment(game, include_full_state=True)
         sess = tf.Session()
+
         agents = []
         for pid in range(env.num_players):
             ag = NFSP(
                 sess, pid,
                 game.observation_tensor_size(),
                 game.num_distinct_actions(),
-                hidden_layers_sizes=[64,64],
-                reservoir_buffer_capacity=100_000,
-                anticipatory_param=ETA_START,
+                hidden_layers_sizes=hids,
+                reservoir_buffer_capacity=reservoir,
+                anticipatory_param=eta,
                 batch_size=32,
-                rl_learning_rate=0.01,
-                sl_learning_rate=0.01,
+                rl_learning_rate=rl_lr,
+                sl_learning_rate=sl_lr,
                 min_buffer_size_to_learn=1000,
-                learn_every=64,
+                learn_every=32,
                 optimizer_str="adam",
                 epsilon_start=EPS_START,
                 epsilon_decay_duration=1
             )
             agents.append(ag)
+
         sess.run(tf.global_variables_initializer())
 
-        start       = time.time()
-        next_snap   = start + SNAPSHOT_INTERVAL_SEC
-        next_log    = start + LOG_INTERVAL_SEC
-        episode     = 0
+        start     = time.time()
+        next_log  = start + LOG_INTERVAL_SEC
+        next_snap = start + SNAPSHOT_INTERVAL_SEC
+        episode   = 0
 
         while True:
             episode += 1
             now     = time.time()
             elapsed = now - start
             frac    = min(1.0, elapsed / MAX_TRAIN_SEC)
-            eta     = ETA_START + frac * (ETA_END - ETA_START)
+            eta     = ETAS[b] + frac * (EPS_END - ETAS[b])  # or use same frac logic
             eps     = compute_epsilon(elapsed)
 
             for ag in agents:
@@ -92,12 +109,10 @@ for b in BOARD_SIZES:
                 out = agents[p].step(ts)
                 ts  = env.step([out.action])
 
-            # per-minute log
             if now >= next_log:
                 print(f"[Episode {episode}] board={b}x{b} elapsed={elapsed:.1f}s / {MAX_TRAIN_SEC:.1f}s  ε={eps:.2f}")
                 next_log += LOG_INTERVAL_SEC
 
-            # snapshot + metadata every 10 min
             if now >= next_snap:
                 writer.writerow([int(elapsed), episode, eta, eps])
                 f.flush()
