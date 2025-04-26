@@ -118,7 +118,7 @@ def main():
         print(f"Wrote PPO results to {out_csv}")
 
         if best_ckpt:
-            dst = os.path.join(PROJECT_ROOT, "best_weight", "ppo", f"hex_{B}")
+            dst = os.path.join(SCRIPT_DIR, "best_weight", "ppo", f"hex_{B}")
             os.makedirs(dst, exist_ok=True)
             shutil.copy(best_ckpt, dst)
             print(f"→ Best PPO @{os.path.basename(best_ckpt)} (win={best_wr:.3f}) → {dst}")

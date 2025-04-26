@@ -60,20 +60,23 @@ class EvalNFSPAgent:
     def __init__(self, sess, pid, obs_dim, n_actions, board_size):
         self.pid  = pid
         self.sess = sess
+        # Build NFSP graph exactly as in training:
         self.agent = NFSP(
             sess, pid,
             obs_dim, n_actions,
-            hidden_layers_sizes={5:[64,64], 8:[128,128], 11:[128,128]}[board_size],
-            reservoir_buffer_capacity={5:100000, 8:300000,11:500000}[board_size],
-            anticipatory_param={5:0.1,8:0.1,11:0.1}[board_size],
-            batch_size=32,
-            rl_learning_rate=1e-3,
-            sl_learning_rate=1e-4,
+            hidden_layers_sizes=[64],
+            reservoir_buffer_capacity=20_000,
+            anticipatory_param=0.1,
+            batch_size=128,
+            rl_learning_rate=0.01,
+            sl_learning_rate=0.005,
             min_buffer_size_to_learn=1000,
-            learn_every=32,
+            learn_every=64,
             optimizer_str="adam"
         )
-        sess.run(tf.global_variables_initializer())
+        # Must initialize *all* vars so that restore() can overwrite the avg-policy ones,
+        # and leave the rest (Q-net, target-net) in a valid state (even though we won't use them).
+        self.sess.run(tf.global_variables_initializer())
 
     def restore_avg(self, avg_prefix):
         """Restore only the avg-policy network variables."""
@@ -95,53 +98,54 @@ class EvalNFSPAgent:
 def main():
     for B in [5, 8, 11]:
         print(f"\n=== Board size {B} ===")
-        game      = pyspiel.load_game(f"hex(board_size={B})")
-        sims      = {5:50, 8:50, 11:50}[B]
-        mcts_bot  = EvalMCTSBot(game, sims)
-        obs_dim   = game.observation_tensor_size()
-        n_actions = game.num_distinct_actions()
 
-        # 1) load existing CSV (must exist with headers: timestamp_s, ppo_mcts_win, az_mcts_win, etc.)
-        csv_path = os.path.join(PROJECT_ROOT, "evaluation", f"eval_{B}.csv")
-        with open(csv_path, newline="") as f:
-            reader = csv.reader(f)
-            header = next(reader)
-            rows   = list(reader)
-
-        # 2) append new columns if missing
-        nfsp_cols = ["nfsp0_mcts_win", "nfsp1_mcts_win"]
-        if all(c in header for c in nfsp_cols):
-            print(f"  → {csv_path} already has NFSP columns, skipping.")
-            continue
-        header.extend(nfsp_cols)
-
-        # 3) collect sorted avg-network prefixes for each pid
-        ckpt_dir = os.path.join(PROJECT_ROOT, "weights", "nfsp", f"nfsp_hex_{B}_4h")
-        def ts_from_path(p): 
-            return int(os.path.basename(p).split('_')[-1].replace('s.ckpt.index',''))
-        avg0_idx = sorted(glob.glob(os.path.join(ckpt_dir, "avg_network_pid0_*s.ckpt.index")),
-                          key=ts_from_path)
-        avg1_idx = sorted(glob.glob(os.path.join(ckpt_dir, "avg_network_pid1_*s.ckpt.index")),
-                          key=ts_from_path)
-        avg0 = [p[:-len(".index")] for p in avg0_idx]
-        avg1 = [p[:-len(".index")] for p in avg1_idx]
-
-        if len(avg0) < len(rows) or len(avg1) < len(rows):
-            raise RuntimeError(
-                f"Not enough NFSP checkpoints for B={B}: "
-                f"p0={len(avg0)}, p1={len(avg1)}, rows={len(rows)}"
-            )
-
-        # 4) evaluate and track best single-agent
-        best_wr   = -1.0
-        best_pid  = None
-        best_ts   = None
-
+        # Fresh graph for each board size
         tf.reset_default_graph()
+
+        # 1) Create session & agents
         with tf.Session() as sess:
+            game      = pyspiel.load_game(f"hex(board_size={B})")
+            sims      = 50
+            mcts_bot  = EvalMCTSBot(game, sims)
+            obs_dim   = game.observation_tensor_size()
+            n_actions = game.num_distinct_actions()
+
             agent0 = EvalNFSPAgent(sess, pid=0, obs_dim=obs_dim, n_actions=n_actions, board_size=B)
             agent1 = EvalNFSPAgent(sess, pid=1, obs_dim=obs_dim, n_actions=n_actions, board_size=B)
 
+            # 2) Load or skip CSV
+            csv_path = os.path.join(PROJECT_ROOT, "evaluation", f"eval_{B}.csv")
+            with open(csv_path, newline="") as f:
+                reader = csv.reader(f)
+                header = next(reader)
+                rows   = list(reader)
+
+            nfsp_cols = ["nfsp0_mcts_win", "nfsp1_mcts_win"]
+            if all(c in header for c in nfsp_cols):
+                print(f"  → {csv_path} already has NFSP columns, skipping.")
+                continue
+            header.extend(nfsp_cols)
+
+            # 3) Gather and sort avg-network checkpoints
+            ckpt_dir = os.path.join(PROJECT_ROOT, "weights", "nfsp", f"nfsp_hex_{B}_4h")
+            def ts_from_path(p):
+                # "avg_network_pid0_120s.ckpt.index" → 120
+                return int(os.path.basename(p).split('_')[-1].replace('s.ckpt.index',''))
+            avg0_idx = sorted(glob.glob(os.path.join(ckpt_dir, "avg_network_pid0_*s.ckpt.index")),
+                              key=ts_from_path)
+            avg1_idx = sorted(glob.glob(os.path.join(ckpt_dir, "avg_network_pid1_*s.ckpt.index")),
+                              key=ts_from_path)
+            avg0 = [p[:-len(".index")] for p in avg0_idx]
+            avg1 = [p[:-len(".index")] for p in avg1_idx]
+
+            if len(avg0) < len(rows) or len(avg1) < len(rows):
+                raise RuntimeError(
+                    f"Not enough NFSP checkpoints for B={B}: "
+                    f"p0={len(avg0)}, p1={len(avg1)}, rows={len(rows)}"
+                )
+
+            # 4) Evaluate all snapshots
+            best_wr, best_pid, best_ts = -1.0, None, None
             for i, row in enumerate(rows):
                 pre0 = avg0[i]
                 pre1 = avg1[i]
@@ -160,20 +164,20 @@ def main():
                 if r1 > best_wr:
                     best_wr, best_pid, best_ts = r1, 1, ts
 
-        # 5) write back CSV
-        with open(csv_path, "w", newline="") as f:
-            writer = csv.writer(f)
-            writer.writerow(header)
-            writer.writerows(rows)
-        print(f"  → updated {csv_path}")
+            # 5) Write back CSV
+            with open(csv_path, "w", newline="") as f:
+                writer = csv.writer(f)
+                writer.writerow(header)
+                writer.writerows(rows)
+            print(f"  → updated {csv_path}")
 
-        # 6) copy best avg+q into best_weight
-        dst = os.path.join(PROJECT_ROOT, "best_weight", "nfsp", f"hex_{B}")
-        os.makedirs(dst, exist_ok=True)
-        pattern = os.path.join(ckpt_dir, f"*pid{best_pid}_{best_ts}s.ckpt*")
-        for fn in glob.glob(pattern):
-            shutil.copy(fn, dst)
-        print(f"  → best NFSP pid{best_pid}@{best_ts}s (win={best_wr:.3f}) copied to {dst}")
+            # 6) Copy best avg+q into best_weight
+            dst = os.path.join(SCRIPT_DIR, "best_weight", "nfsp", f"hex_{B}")
+            os.makedirs(dst, exist_ok=True)
+            pattern = os.path.join(ckpt_dir, f"*pid{best_pid}_{best_ts}s.ckpt*")
+            for fn in glob.glob(pattern):
+                shutil.copy(fn, dst)
+            print(f"  → best NFSP pid{best_pid}@{best_ts}s (win={best_wr:.3f}) copied to {dst}")
 
 
 if __name__ == "__main__":

@@ -1,10 +1,8 @@
 4: retrain nfsp
 
-5: Evaluate performance
+5: Evaluate performance of nfsp
 
 6: plot training results against each other
-
-7: play against each other in a round robin format
 
 8: visualize a game (live or final) (WHERE WE SEE STATE VALUES FOR EACH STATE)
 

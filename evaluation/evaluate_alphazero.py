@@ -48,7 +48,7 @@ def evaluate_vs_mcts(game, agent, mcts_bot, pid=0, num_games=100):
 
 
 class EvalMCTSBot:
-    def __init__(self, game, sims=100):
+    def __init__(self, game, sims=50):
         self.bot = mcts.MCTSBot(
             game, 1.0, sims,
             mcts.RandomRolloutEvaluator(),
@@ -144,7 +144,7 @@ def main():
 
         # copy best
         if best_pref:
-            dst_dir = os.path.join(PROJECT_ROOT, "best_weight", "alpha_zero", f"hex_{B}")
+            dst_dir = os.path.join(SCRIPT_DIR, "best_weight", "alpha_zero", f"hex_{B}")
             os.makedirs(dst_dir, exist_ok=True)
             for fn in glob.glob(best_pref + "*"):
                 shutil.copy(fn, dst_dir)

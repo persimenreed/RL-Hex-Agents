@@ -1,0 +1,7 @@
+board_size,model1,model2,winrate_model1
+5,PPO,NFSP,0.95
+5,PPO,AZ,0.28
+5,NFSP,AZ,0.0
+8,PPO,NFSP,0.98
+8,PPO,AZ,0.73
+8,NFSP,AZ,0.04
