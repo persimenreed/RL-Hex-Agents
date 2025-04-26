@@ -3,45 +3,56 @@
 round_robin.py
 
 Run a round-robin tournament among the best PPO, NFSP, and AlphaZero agents for Hex
-on 5×5, 8×8, and 11×11 boards. Logs match results to CSV and draws a summary plot.
+on 5×5, 8×8, and 11×11 boards. Logs match results to CSV and draws all plots.
 """
+
 import os
 import sys
 import glob
+import csv
+import random
 import numpy as np
-import tensorflow.compat.v1 as tf
 import torch
 import pyspiel
+import tensorflow.compat.v1 as tf
 import matplotlib.pyplot as plt
-import csv
+from matplotlib.patches import Patch
 
-# Disable TF v2 behaviors
+# Disable TF v2 behavior
 tf.disable_v2_behavior()
 
-# Make sure project root is on PYTHONPATH
-SCRIPT_DIR   = os.path.dirname(__file__)
-PROJECT_ROOT = os.path.abspath(os.path.join(SCRIPT_DIR, os.pardir)) 
+# Paths
+SCRIPT_DIR = os.path.dirname(__file__)
+PROJECT_ROOT = os.path.abspath(os.path.join(SCRIPT_DIR, ".."))
 sys.path.insert(0, PROJECT_ROOT)
+BEST_WEIGHT = os.path.join(SCRIPT_DIR, "best_weight")
+OUTPUT_DIR = os.path.join(SCRIPT_DIR, "output")
+os.makedirs(OUTPUT_DIR, exist_ok=True)
 
-# --- Agent definitions ---
+# Config
+BOARDS = [5, 8, 11]
+MODELS = ["PPO", "NFSP", "AZ"]
+CMAP = {"PPO": "C0", "NFSP": "C1", "AZ": "C2"}
+
+# --- Agents ---
 
 class EvalPPOAgent:
     def __init__(self, ckpt_path, obs_dim, board_size, n_actions):
-        from ppo.ppo_v0 import CNNPolicy
+        from models.ppo import CNNPolicy
         self.board_size = board_size
-        self.in_ch      = obs_dim // (board_size * board_size)
-        self.net        = CNNPolicy(self.in_ch, board_size, n_actions)
+        self.in_ch = obs_dim // (board_size * board_size)
+        self.net = CNNPolicy(self.in_ch, board_size, n_actions)
         self.net.load_state_dict(torch.load(ckpt_path, map_location="cpu"))
         self.net.eval()
 
     def act(self, state):
-        obs   = state.observation_tensor()
+        obs = state.observation_tensor()
         legal = list(state.legal_actions())
-        x     = torch.tensor(obs, dtype=torch.float32)
-        x     = x.view(1, self.in_ch, self.board_size, self.board_size)
+        x = torch.tensor(obs, dtype=torch.float32)
+        x = x.view(1, self.in_ch, self.board_size, self.board_size)
         with torch.no_grad():
             logits, _ = self.net(x)
-            logits    = logits.numpy()[0]
+            logits = logits.numpy()[0]
         mask = np.full_like(logits, -np.inf, dtype=np.float32)
         mask[legal] = 0.0
         return int(np.argmax(logits + mask))
@@ -49,7 +60,7 @@ class EvalPPOAgent:
 class EvalNFSPAgent:
     def __init__(self, sess, pid, obs_dim, n_actions, board_size):
         from open_spiel.python.algorithms.nfsp import NFSP
-        self.pid  = pid
+        self.pid = pid
         self.sess = sess
         self.agent = NFSP(
             sess, pid,
@@ -67,18 +78,26 @@ class EvalNFSPAgent:
         sess.run(tf.global_variables_initializer())
 
     def restore_avg(self, prefix):
-        saver = tf.train.Saver(self.agent._avg_network.variables)
+        reader = tf.train.NewCheckpointReader(prefix)
+        ckpt_vars = set(reader.get_variable_to_shape_map().keys())
+        graph_vars = self.agent._avg_network.variables
+        ckpt_pref = next(iter(ckpt_vars)).split('/')[0]
+        graph_pref = graph_vars[0].op.name.split('/')[0]
+        var_map = {}
+        for var in graph_vars:
+            ckpt_name = var.op.name.replace(graph_pref, ckpt_pref)
+            if ckpt_name in ckpt_vars:
+                var_map[ckpt_name] = var
+        saver = tf.train.Saver(var_list=var_map)
         saver.restore(self.sess, prefix)
 
     def act(self, state):
-        obs   = np.array(state.observation_tensor(), dtype=np.float32)
-        info  = obs.reshape(1, -1)
-        probs = self.sess.run(
-            self.agent._avg_policy_probs,
-            feed_dict={self.agent._info_state_ph: info}
-        )[0]
+        obs = np.array(state.observation_tensor(), dtype=np.float32)
+        info = obs.reshape(1, -1)
+        probs = self.sess.run(self.agent._avg_policy_probs, feed_dict={self.agent._info_state_ph: info})[0]
         legal = state.legal_actions()
-        mask  = np.zeros_like(probs); mask[legal] = 1.0
+        mask = np.zeros_like(probs)
+        mask[legal] = 1.0
         return int(np.argmax(probs * mask))
 
 class EvalAlphaZeroAgent:
@@ -86,191 +105,212 @@ class EvalAlphaZeroAgent:
         saver = tf.train.import_meta_graph(ckpt_prefix + ".meta", clear_devices=True)
         saver.restore(sess, ckpt_prefix)
         g = tf.get_default_graph()
-        self.obs_ph    = g.get_tensor_by_name("input:0")
+        self.obs_ph = g.get_tensor_by_name("input:0")
         self.legals_ph = g.get_tensor_by_name("legals_mask:0")
-        self.train_ph  = g.get_tensor_by_name("training:0")
-        self.probs_t   = g.get_tensor_by_name("policy_softmax:0")
-        self.sess      = sess
+        self.train_ph = g.get_tensor_by_name("training:0")
+        self.probs_t = g.get_tensor_by_name("policy_softmax:0")
+        self.sess = sess
 
     def act(self, state):
-        obs  = np.array(state.observation_tensor(), dtype=np.float32)
+        obs = np.array(state.observation_tensor(), dtype=np.float32)
         mask = np.array(state.legal_actions_mask(), dtype=np.float32)
         feed = {self.obs_ph: [obs], self.legals_ph: [mask], self.train_ph: False}
         probs = self.sess.run(self.probs_t, feed_dict=feed)[0]
         probs *= mask
         return int(np.argmax(probs))
 
-# --- Match and tournament logic ---
-import random
+# --- Evaluation helpers ---
 
-def evaluate_vs_opponent(game, agent, opp, pid, num_games=100):
-    wins = 0
-    for i in range(num_games):
+def evaluate_vs(game, agent, opp, pid, n_games=100):
+    wins, starts, wins_as_start = 0, 0, 0
+    for i in range(n_games):
         state = game.new_initial_state()
         for _ in range(1):
-            if state.is_terminal(): break
+            if state.is_terminal():
+                break
             actions = state.legal_actions()
             state.apply_action(random.choice(actions))
-        swap  = (i >= num_games//2)
+        swap = (i >= n_games // 2)
+        first = (state.current_player() == pid) ^ swap
         while not state.is_terminal():
-            cur      = state.current_player()
-            is_agent = (cur == pid and not swap) or (cur != pid and swap)
-            move     = agent.act(state) if is_agent else opp.act(state)
+            cur = state.current_player()
+            move = agent.act(state) if ((cur == pid) != swap) else opp.act(state)
             state.apply_action(move)
-        result = state.returns()[pid] if not swap else state.returns()[1-pid]
-        if result > 0:
+        if first:
+            starts += 1
+        if (state.returns()[pid] if not swap else state.returns()[1-pid]) > 0:
             wins += 1
-    return wins / num_games
+            if first:
+                wins_as_start += 1
+    return wins / n_games, wins_as_start / starts if starts > 0 else 0.0
 
+def plot_confusion_matrix(mat, models, out_path):
+    fig, ax = plt.subplots()
+    cax = ax.matshow(mat, cmap="Blues", vmin=0, vmax=1)
+    for (i, j), val in np.ndenumerate(mat):
+        # Correct logic: light background -> dark text, dark background -> white text
+        color = "black" if val < 0.5 else "white"
+        ax.text(j, i, f"{val*100:.1f}%", ha="center", va="center", color=color, fontsize=10, fontweight="bold")
+    ax.set_xticks(range(len(models)))
+    ax.set_yticks(range(len(models)))
+    ax.set_xticklabels(models)
+    ax.set_yticklabels(models)
+    fig.colorbar(cax)
+    plt.tight_layout()
+    plt.savefig(out_path)
+    plt.close()
+
+def plot_round_robin_bar(rel_results, board_size):
+    matchups = [("PPO", "NFSP"), ("AZ", "PPO"), ("NFSP", "AZ")]
+    labels = []
+    wins_bottom = []
+    wins_top = []
+
+    for bot, top in matchups:
+        wr_bot = None
+        for _, m1, m2, wr in rel_results:
+            if m1 == bot and m2 == top:
+                wr_bot = wr
+                break
+            if m1 == top and m2 == bot:
+                wr_bot = 1.0 - wr
+                break
+        if wr_bot is None:
+            raise ValueError(f"No result for {bot} vs {top}")
+        labels.append(f"{bot} vs {top}")
+        wins_bottom.append(wr_bot)
+        wins_top.append(1.0 - wr_bot)
+
+    x = np.arange(len(labels))
+    width = 0.6
+
+    fig, ax = plt.subplots()
+    for i, (bot, _) in enumerate(matchups):
+        ax.bar(x[i], wins_bottom[i], width, color=CMAP[bot])
+    for i, (_, top) in enumerate(matchups):
+        ax.bar(x[i], wins_top[i], width, bottom=wins_bottom[i], color=CMAP[top])
+
+    for i in range(len(labels)):
+        ax.text(x[i], wins_bottom[i]/2, f"{wins_bottom[i]*100:.0f}%", ha="center", va="center", color="white", fontweight="bold")
+        ax.text(x[i], wins_bottom[i]+wins_top[i]/2, f"{wins_top[i]*100:.0f}%", ha="center", va="center", color="white", fontweight="bold")
+
+    ax.set_xticks(x)
+    ax.set_xticklabels(labels, rotation=45, ha="right")
+    ax.set_ylim(0, 1)
+    ax.set_ylabel("Win rate")
+    #ax.set_title(f"{board_size}×{board_size} Round-robin results")
+    legend_handles = [Patch(color=CMAP[m], label=m if m != "AZ" else "AlphaZero") for m in MODELS]
+    ax.legend(handles=legend_handles, loc="upper right")
+
+    plt.tight_layout()
+    plt.savefig(os.path.join(OUTPUT_DIR, f"round_robin_{board_size}x{board_size}.png"))
+    plt.close()
+
+# --- Main ---
 
 def main():
-    boards = [5, 8, 11]
-    #boards = [5]
-    OUTPUT_DIR = os.path.join(SCRIPT_DIR, "output")
-    os.makedirs(OUTPUT_DIR, exist_ok=True)
     all_results = []
+    confusion_stats = []
 
-    for B in boards:
+    for B in BOARDS:
         tf.reset_default_graph()
-        print(f"\n--- Board {B} ---")
+        print(f"--- Board {B}×{B} ---")
         game = pyspiel.load_game(f"hex(board_size={B})")
 
-        # PPO: look in best_weight/ppo first, then weights/ppo fallback
-        ppo_dir = os.path.join(PROJECT_ROOT, "best_weight", "ppo", f"hex_{B}")
-        ppths = glob.glob(os.path.join(ppo_dir, "*.pt"))
-        if not ppths:
-            ppths = glob.glob(os.path.join(PROJECT_ROOT, "weights", "ppo", f"ppo_hex_{B}_4h", "ppo_policy_*s.pt"))
-        ppth = sorted(ppths)[-1]
-        ppo  = EvalPPOAgent(ppth, game.observation_tensor_size(), B, game.num_distinct_actions())
+        ppo = EvalPPOAgent(sorted(glob.glob(os.path.join(BEST_WEIGHT, "ppo", f"hex_{B}", "*.pt")))[-1],
+                           game.observation_tensor_size(), B, game.num_distinct_actions())
 
-        # NFSP: best_weight/nfsp then fallback
-        nfsp_dir = os.path.join(PROJECT_ROOT, "best_weight", "nfsp", f"hex_{B}")
-        avg_ckpts = glob.glob(os.path.join(nfsp_dir, "avg_network_pid0_*s.ckpt.index"))
-        if not avg_ckpts:
-            avg_ckpts = glob.glob(os.path.join(PROJECT_ROOT, "weights", "nfsp", f"nfsp_hex_{B}_4h", "avg_network_pid0_*s.ckpt.index"))
-        avg0 = avg_ckpts[-1][:-len(".index")]
-        tf.reset_default_graph()
         sess_n = tf.Session()
-        nfsp   = EvalNFSPAgent(sess_n, 0, game.observation_tensor_size(), game.num_distinct_actions(), B)
-        nfsp.restore_avg(avg0)
+        nfsp = EvalNFSPAgent(sess_n, 0, game.observation_tensor_size(), game.num_distinct_actions(), B)
+        nfsp.restore_avg(sorted(glob.glob(os.path.join(BEST_WEIGHT, "nfsp", f"hex_{B}", "avg_network_pid*_*.ckpt.index")))[-1][:-6])
 
-        # AlphaZero: best_weight/alpha_zero then fallback
-        az_dir = os.path.join(PROJECT_ROOT, "best_weight", "alpha_zero", f"hex_{B}")
-        metas  = glob.glob(os.path.join(az_dir, "*.meta"))
-        if not metas:
-            metas = glob.glob(os.path.join(PROJECT_ROOT, "weights", "alpha_zero", f"alpha_zero_hex_{B}_4h", "checkpoint-*.meta"))
-        az_pref = metas[-1][:-len(".meta")]
         sess_az = tf.Session()
-        az      = EvalAlphaZeroAgent(sess_az, az_pref)
+        az = EvalAlphaZeroAgent(sess_az, sorted(glob.glob(os.path.join(BEST_WEIGHT, "alpha_zero", f"hex_{B}", "*.meta")))[-1][:-5])
 
         bots = [("PPO", ppo), ("NFSP", nfsp), ("AZ", az)]
+
+        board_results = []
+
         for i in range(len(bots)):
             for j in range(i+1, len(bots)):
-                name_i, agent_i = bots[i]
-                name_j, agent_j = bots[j]
-                wr_i = evaluate_vs_opponent(game, agent_i, agent_j, pid=0)
-                print(f"{name_i} vs {name_j}: {wr_i:.3f}/{1-wr_i:.3f}")
-                all_results.append((B, name_i, name_j, wr_i))
+                m1, a1 = bots[i]
+                m2, a2 = bots[j]
+                wr, start_wr = evaluate_vs(game, a1, a2, pid=0)
+                all_results.append((B, m1, m2, wr))
+                board_results.append((B, m1, m2, wr))
+                confusion_stats.append((B, m1, m2, wr, start_wr))
+                print(f"  {m1} vs {m2}: {wr:.3f}")
 
-        csv_out = os.path.join(OUTPUT_DIR, f"round_robin_results_{B}x{B}.csv")
-        with open(csv_out, "w", newline="") as f:
-            w = csv.writer(f)
-            w.writerow(["board_size","model1","model2","winrate_model1"])
-            w.writerows(all_results)
-        print(f"Results → {csv_out}")
+                # Save individual matchup confusion
+                mat = np.array([[start_wr, 1-start_wr], [wr-start_wr, 1-wr-(1-start_wr)]])
+                save_p = os.path.join(OUTPUT_DIR, f"confusion_{B}x{B}_{m1}_vs_{m2}.png")
+                plot_confusion_matrix(mat, ["Start Win", "Start Loss"], save_p)
 
-        # new stacked‐bar plotting
-        # --- plot (replace your old plotting section with this) ---
-        # --- plot (replacement) ---
-        from matplotlib.patches import Patch
-    
-        # we collected all_results as (board, model1, model2, wr_model1)
-        # pick out only this board:
-        b = B
-        rel = [r for r in all_results if r[0] == b]
-    
-        # define exactly the order and pairs you want
-        matchups = [
-            ("PPO",  "NFSP"),
-            ("AZ",   "PPO"),
-            ("NFSP", "AZ")
-        ]
-        # color map
-        cmap = {"PPO": "C0", "NFSP": "C1", "AZ": "C2"}
-    
-        labels      = []
-        wins_bottom = []
-        wins_top    = []
-        for bot, top in matchups:
-            # try direct lookup
-            wr_bot = None
-            for _, m1, m2, wr in rel:
-                if m1 == bot and m2 == top:
-                    wr_bot = wr
-                    break
-                if m1 == top and m2 == bot:
-                    wr_bot = 1.0 - wr
-                    break
-            if wr_bot is None:
-                raise ValueError(f"No result for {bot} vs {top}")
-            labels.append(f"{bot} vs {top}")
-            wins_bottom.append(wr_bot)
-            wins_top.append(1.0 - wr_bot)
-    
-    
-        x     = np.arange(len(labels))
-        width = 0.6
-    
-        fig, ax = plt.subplots()
-        # bottom bars
-        for i, (bot, _) in enumerate(matchups):
-            ax.bar(
-                x[i], wins_bottom[i], width,
-                color=cmap[bot]
-            )
-        # top bars
-        for i, (_, top) in enumerate(matchups):
-            ax.bar(
-                x[i], wins_top[i], width,
-                bottom=wins_bottom[i],
-                color=cmap[top]
-            )
-    
-        # annotate
-        for i in range(len(labels)):
-            # bottom annotation
-            ax.text(
-                x[i], wins_bottom[i]/2,
-                f"{wins_bottom[i]*100:.0f}%",
-                ha="center", va="center", color="white", fontweight="bold"
-            )
-            # top annotation
-            ax.text(
-                x[i],
-                wins_bottom[i] + wins_top[i]/2,
-                f"{wins_top[i]*100:.0f}%",
-                ha="center", va="center", color="white", fontweight="bold"
-            )
-    
-        ax.set_xticks(x)
-        ax.set_xticklabels(labels, rotation=45, ha="right")
-        ax.set_ylim(0.0, 1.0)
-        ax.set_ylabel("Win rate")
-        ax.set_title(f"{b}×{b} Round-robin results")
-    
-        # custom legend
-        legend_handles = [
-            Patch(color=cmap["PPO"],  label="PPO"),
-            Patch(color=cmap["NFSP"], label="NFSP"),
-            Patch(color=cmap["AZ"],   label="AlphaZero"),
-        ]
-        ax.legend(handles=legend_handles, loc="upper right")
-    
-        plt.tight_layout()
-        png_out = os.path.join(OUTPUT_DIR, f"round_robin_{b}x{b}.png")
-        plt.savefig(png_out)
-        print(f"Plot → {png_out}")
+        plot_round_robin_bar(board_results, B)
 
+    # Aggregate confusion
+    agg_mat = np.zeros((3, 3))
+    counts = np.zeros((3, 3))
+    idx = {m: i for i, m in enumerate(MODELS)}
+    for _, m1, m2, wr in all_results:
+        agg_mat[idx[m1], idx[m2]] += wr
+        agg_mat[idx[m2], idx[m1]] += (1-wr)
+        counts[idx[m1], idx[m2]] += 1
+        counts[idx[m2], idx[m1]] += 1
+    agg_mat /= np.maximum(counts, 1)
+
+    agg_out = os.path.join(OUTPUT_DIR, "confusion_aggregated.png")
+    plot_confusion_matrix(agg_mat, MODELS, agg_out)
+    print(f"Aggregated confusion → {agg_out}")
+
+    # --- Aggregated round robin bar plot across all board sizes ---
+
+    matchups = [("PPO", "NFSP"), ("AZ", "PPO"), ("NFSP", "AZ")]
+    labels = []
+    wins_bottom = []
+    wins_top = []
+
+    for bot, top in matchups:
+        wrs = []
+        for _, m1, m2, wr in all_results:
+            if m1 == bot and m2 == top:
+                wrs.append(wr)
+            elif m1 == top and m2 == bot:
+                wrs.append(1.0 - wr)
+        if not wrs:
+            raise RuntimeError(f"No aggregated results found for {bot} vs {top}")
+        wr_bot = np.mean(wrs)
+        labels.append(f"{bot} vs {top}")
+        wins_bottom.append(wr_bot)
+        wins_top.append(1.0 - wr_bot)
+
+    x = np.arange(len(labels))
+    width = 0.6
+
+    fig, ax = plt.subplots()
+    for i, (bot, _) in enumerate(matchups):
+        ax.bar(x[i], wins_bottom[i], width, color=CMAP[bot])
+    for i, (_, top) in enumerate(matchups):
+        ax.bar(x[i], wins_top[i], width, bottom=wins_bottom[i], color=CMAP[top])
+
+    for i in range(len(labels)):
+        ax.text(x[i], wins_bottom[i]/2, f"{wins_bottom[i]*100:.0f}%", ha="center", va="center", color="white", fontweight="bold")
+        ax.text(x[i], wins_bottom[i]+wins_top[i]/2, f"{wins_top[i]*100:.0f}%", ha="center", va="center", color="white", fontweight="bold")
+
+    ax.set_xticks(x)
+    ax.set_xticklabels(labels, rotation=45, ha="right")
+    ax.set_ylim(0, 1)
+    ax.set_ylabel("Win rate")
+    #ax.set_title("Aggregated Round-robin Results Across All Boards")
+
+    legend_handles = [Patch(color=CMAP[m], label=m if m != "AZ" else "AlphaZero") for m in MODELS]
+    ax.legend(handles=legend_handles, loc="upper right")
+
+    plt.tight_layout()
+    plt.savefig(os.path.join(OUTPUT_DIR, "round_robin_aggregated.png"))
+    plt.close()
+
+    print(f"Aggregated round robin plot → {os.path.join(OUTPUT_DIR, 'round_robin_aggregated.png')}")
 
 
 if __name__ == "__main__":
