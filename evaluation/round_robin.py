@@ -122,7 +122,11 @@ class EvalAlphaZeroAgent:
 # --- Evaluation helpers ---
 
 def evaluate_vs(game, agent, opp, pid, n_games=100):
-    wins, starts, wins_as_start = 0, 0, 0
+    a_start_a_win = 0
+    a_start_b_win = 0
+    b_start_a_win = 0
+    b_start_b_win = 0
+
     for i in range(n_games):
         state = game.new_initial_state()
         for _ in range(1):
@@ -132,30 +136,41 @@ def evaluate_vs(game, agent, opp, pid, n_games=100):
             state.apply_action(random.choice(actions))
         swap = (i >= n_games // 2)
         first = (state.current_player() == pid) ^ swap
+
         while not state.is_terminal():
             cur = state.current_player()
             move = agent.act(state) if ((cur == pid) != swap) else opp.act(state)
             state.apply_action(move)
-        if first:
-            starts += 1
-        if (state.returns()[pid] if not swap else state.returns()[1-pid]) > 0:
-            wins += 1
-            if first:
-                wins_as_start += 1
-    return wins / n_games, wins_as_start / starts if starts > 0 else 0.0
+
+        model_a_won = (state.returns()[pid] if not swap else state.returns()[1 - pid]) > 0
+
+        if first:  # Model A starts
+            if model_a_won:
+                a_start_a_win += 1
+            else:
+                a_start_b_win += 1
+        else:      # Model B starts
+            if model_a_won:
+                b_start_a_win += 1
+            else:
+                b_start_b_win += 1
+
+    return a_start_a_win, a_start_b_win, b_start_a_win, b_start_b_win
+
 
 def plot_confusion_matrix(mat, models, out_path):
-    fig, ax = plt.subplots()
+    fig, ax = plt.subplots(figsize=(6,6))
     cax = ax.matshow(mat, cmap="Blues", vmin=0, vmax=1)
+
     for (i, j), val in np.ndenumerate(mat):
-        # Correct logic: light background -> dark text, dark background -> white text
         color = "black" if val < 0.5 else "white"
-        ax.text(j, i, f"{val*100:.1f}%", ha="center", va="center", color=color, fontsize=10, fontweight="bold")
-    ax.set_xticks(range(len(models)))
-    ax.set_yticks(range(len(models)))
-    ax.set_xticklabels(models)
-    ax.set_yticklabels(models)
-    fig.colorbar(cax)
+        ax.text(j, i, f"{val*100:.1f}%", ha="center", va="center", color=color, fontsize=12, fontweight="bold")
+
+    ax.set_xticks(range(2))
+    ax.set_yticks(range(2))
+    ax.set_xticklabels([f"{models[0]} Starts", f"{models[1]} Starts"])
+    ax.set_yticklabels([f"{models[0]} Wins", f"{models[1]} Wins"])
+
     plt.tight_layout()
     plt.savefig(out_path)
     plt.close()
@@ -235,18 +250,36 @@ def main():
             for j in range(i+1, len(bots)):
                 m1, a1 = bots[i]
                 m2, a2 = bots[j]
-                wr, start_wr = evaluate_vs(game, a1, a2, pid=0)
-                all_results.append((B, m1, m2, wr))
-                board_results.append((B, m1, m2, wr))
-                confusion_stats.append((B, m1, m2, wr, start_wr))
-                print(f"  {m1} vs {m2}: {wr:.3f}")
+                a_start_a_win, a_start_b_win, b_start_a_win, b_start_b_win = evaluate_vs(game, a1, a2, pid=0)
 
-                # Save individual matchup confusion
-                mat = np.array([[start_wr, 1-start_wr], [wr-start_wr, 1-wr-(1-start_wr)]])
+                total_a_start = a_start_a_win + a_start_b_win
+                total_b_start = b_start_a_win + b_start_b_win
+
+                mat = np.array([
+                    [
+                        a_start_a_win / total_a_start if total_a_start > 0 else 0.0,
+                        b_start_a_win / total_b_start if total_b_start > 0 else 0.0
+                    ],
+                    [
+                        a_start_b_win / total_a_start if total_a_start > 0 else 0.0,
+                        b_start_b_win / total_b_start if total_b_start > 0 else 0.0
+                    ]
+                ])
+
                 save_p = os.path.join(OUTPUT_DIR, f"confusion_{B}x{B}_{m1}_vs_{m2}.png")
-                plot_confusion_matrix(mat, ["Start Win", "Start Loss"], save_p)
+                plot_confusion_matrix(mat, [m1, m2], save_p)
+
+                # Calculate total win rate of model A
+                total_games = a_start_a_win + a_start_b_win + b_start_a_win + b_start_b_win
+                wins_for_a = a_start_a_win + b_start_a_win
+                wr = wins_for_a / total_games if total_games > 0 else 0.0
+
+                # Save to results for round robin bar plot
+                board_results.append((B, m1, m2, wr))
+                all_results.append((B, m1, m2, wr))
 
         plot_round_robin_bar(board_results, B)
+
 
     # Aggregate confusion
     agg_mat = np.zeros((3, 3))
