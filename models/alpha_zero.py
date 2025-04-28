@@ -15,11 +15,10 @@ def main():
     else:
         print("Running on CPU")
 
-    # time limit per board (in hours)
     TRAIN_HOURS = 4
     TRAIN_SECONDS = (TRAIN_HOURS * 3600) + 200
 
-    BOARD_SIZES = [8, 11]
+    BOARD_SIZES = [5, 8, 11]
 
     for b in BOARD_SIZES:
         output_path = f"./weights/alpha_zero/alpha_zero_hex_{b}_{TRAIN_HOURS}h"
@@ -57,7 +56,6 @@ def main():
         proc = Process(target=run_alpha_zero, args=(config,))
         proc.start()
 
-        # wait up to TRAIN_SECONDS; if still running, kill it
         proc.join(TRAIN_SECONDS)
         if proc.is_alive():
             print(f"Time limit reached for {b}×{b} — terminating process.")

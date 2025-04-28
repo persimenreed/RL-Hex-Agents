@@ -64,24 +64,44 @@ class EvalNFSPAgent:
         self.agent = NFSP(
             sess, pid,
             obs_dim, n_actions,
-            hidden_layers_sizes=[64],
-            reservoir_buffer_capacity=20_000,
+            hidden_layers_sizes=[64,64],
+            reservoir_buffer_capacity=50_000,
             anticipatory_param=0.1,
             batch_size=128,
-            rl_learning_rate=0.01,
-            sl_learning_rate=0.005,
+            rl_learning_rate=0.005,        # ← match TRAIN RL_LR
+            sl_learning_rate=0.001,        # ← match TRAIN SL_LR
             min_buffer_size_to_learn=1000,
             learn_every=64,
-            optimizer_str="adam"
+            optimizer_str="adam",
+            epsilon_start=1.0,             # ← match TRAIN EPS_START
+            epsilon_decay_duration=7200.0  # ← match TRAIN EPS_DECAY_DURATION (4h·3600/2)
         )
         # Must initialize *all* vars so that restore() can overwrite the avg-policy ones,
         # and leave the rest (Q-net, target-net) in a valid state (even though we won't use them).
         self.sess.run(tf.global_variables_initializer())
 
-    def restore_avg(self, avg_prefix):
-        """Restore only the avg-policy network variables."""
-        saver = tf.train.Saver(self.agent._avg_network.variables)
-        saver.restore(self.sess, avg_prefix)
+    def restore_avg(self, prefix):
+        """Restore only the avg-policy network variables, mapping names to the checkpoint."""
+        # Load checkpoint variable names
+        reader   = tf.train.NewCheckpointReader(prefix)
+        ckpt_vars = set(reader.get_variable_to_shape_map().keys())
+        graph_vars = self.agent._avg_network.variables
+
+        # Figure out how the prefix of names differs
+        ckpt_pref  = next(iter(ckpt_vars)).split('/')[0]
+        graph_pref = graph_vars[0].op.name.split('/')[0]
+
+        # Build a map from checkpoint names → graph vars
+        var_map = {}
+        for var in graph_vars:
+            ckpt_name = var.op.name.replace(graph_pref, ckpt_pref)
+            if ckpt_name in ckpt_vars:
+                var_map[ckpt_name] = var
+
+        # Restore only those that match
+        saver = tf.train.Saver(var_list=var_map)
+        saver.restore(self.sess, prefix)
+
 
     def act(self, state):
         obs   = np.array(state.observation_tensor(), dtype=np.float32)
@@ -114,7 +134,7 @@ def main():
             agent1 = EvalNFSPAgent(sess, pid=1, obs_dim=obs_dim, n_actions=n_actions, board_size=B)
 
             # 2) Load or skip CSV
-            csv_path = os.path.join(PROJECT_ROOT, "evaluation", f"eval_{B}.csv")
+            csv_path = os.path.join(PROJECT_ROOT, "evaluation", "output", f"eval_{B}.csv")
             with open(csv_path, newline="") as f:
                 reader = csv.reader(f)
                 header = next(reader)
