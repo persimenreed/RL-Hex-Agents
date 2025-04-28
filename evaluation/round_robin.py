@@ -166,10 +166,11 @@ def plot_confusion_matrix(mat, models, out_path):
         color = "black" if val < 0.5 else "white"
         ax.text(j, i, f"{val*100:.1f}%", ha="center", va="center", color=color, fontsize=12, fontweight="bold")
 
-    ax.set_xticks(range(2))
-    ax.set_yticks(range(2))
-    ax.set_xticklabels([f"{models[0]} Starts", f"{models[1]} Starts"])
-    ax.set_yticklabels([f"{models[0]} Wins", f"{models[1]} Wins"])
+    size = mat.shape[0]
+    ax.set_xticks(range(size))
+    ax.set_yticks(range(size))
+    ax.set_xticklabels([f"{m} Starts" for m in models])
+    ax.set_yticklabels([f"{m} Wins" for m in models])
 
     plt.tight_layout()
     plt.savefig(out_path)

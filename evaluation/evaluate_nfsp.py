@@ -64,18 +64,18 @@ class EvalNFSPAgent:
         self.agent = NFSP(
             sess, pid,
             obs_dim, n_actions,
-            hidden_layers_sizes=[64,64],
-            reservoir_buffer_capacity=50_000,
+            hidden_layers_sizes=[64],
+            reservoir_buffer_capacity=20_000,
             anticipatory_param=0.1,
             batch_size=128,
-            rl_learning_rate=0.005,        # ← match TRAIN RL_LR
-            sl_learning_rate=0.001,        # ← match TRAIN SL_LR
+            rl_learning_rate=0.01,
+            sl_learning_rate=0.005,
             min_buffer_size_to_learn=1000,
             learn_every=64,
-            optimizer_str="adam",
-            epsilon_start=1.0,             # ← match TRAIN EPS_START
-            epsilon_decay_duration=7200.0  # ← match TRAIN EPS_DECAY_DURATION (4h·3600/2)
+            optimizer_str="adam"
         )
+
+
         # Must initialize *all* vars so that restore() can overwrite the avg-policy ones,
         # and leave the rest (Q-net, target-net) in a valid state (even though we won't use them).
         self.sess.run(tf.global_variables_initializer())
@@ -116,7 +116,7 @@ class EvalNFSPAgent:
 
 
 def main():
-    for B in [5, 8, 11]:
+    for B in [11]:
         print(f"\n=== Board size {B} ===")
 
         # Fresh graph for each board size
