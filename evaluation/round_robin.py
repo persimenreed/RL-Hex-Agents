@@ -1,11 +1,4 @@
 #!/usr/bin/env python3
-"""
-round_robin.py
-
-Run a round-robin tournament among the best PPO, NFSP, and AlphaZero agents for Hex
-on 5×5, 8×8, and 11×11 boards. Logs match results to CSV and draws all plots.
-"""
-
 import os
 import sys
 import glob
@@ -18,10 +11,8 @@ import tensorflow.compat.v1 as tf
 import matplotlib.pyplot as plt
 from matplotlib.patches import Patch
 
-# Disable TF v2 behavior
 tf.disable_v2_behavior()
 
-# Paths
 SCRIPT_DIR = os.path.dirname(__file__)
 PROJECT_ROOT = os.path.abspath(os.path.join(SCRIPT_DIR, ".."))
 sys.path.insert(0, PROJECT_ROOT)
@@ -29,12 +20,9 @@ BEST_WEIGHT = os.path.join(SCRIPT_DIR, "best_weight")
 OUTPUT_DIR = os.path.join(SCRIPT_DIR, "output")
 os.makedirs(OUTPUT_DIR, exist_ok=True)
 
-# Config
 BOARDS = [5, 8, 11]
 MODELS = ["PPO", "NFSP", "AZ"]
 CMAP = {"PPO": "C0", "NFSP": "C1", "AZ": "C2"}
-
-# --- Agents ---
 
 class EvalPPOAgent:
     def __init__(self, ckpt_path, obs_dim, board_size, n_actions):
@@ -118,8 +106,6 @@ class EvalAlphaZeroAgent:
         probs = self.sess.run(self.probs_t, feed_dict=feed)[0]
         probs *= mask
         return int(np.argmax(probs))
-
-# --- Evaluation helpers ---
 
 def evaluate_vs(game, agent, opp, pid, n_games=100):
     a_start_a_win = 0
@@ -222,7 +208,6 @@ def plot_round_robin_bar(rel_results, board_size):
     plt.savefig(os.path.join(OUTPUT_DIR, f"round_robin_{board_size}x{board_size}.png"))
     plt.close()
 
-# --- Main ---
 
 def main():
     all_results = []
@@ -230,7 +215,7 @@ def main():
 
     for B in BOARDS:
         tf.reset_default_graph()
-        print(f"--- Board {B}×{B} ---")
+        print(f"Board {B}×{B}")
         game = pyspiel.load_game(f"hex(board_size={B})")
 
         ppo = EvalPPOAgent(sorted(glob.glob(os.path.join(BEST_WEIGHT, "ppo", f"hex_{B}", "*.pt")))[-1],
@@ -297,8 +282,6 @@ def main():
     plot_confusion_matrix(agg_mat, MODELS, agg_out)
     print(f"Aggregated confusion → {agg_out}")
 
-    # --- Aggregated round robin bar plot across all board sizes ---
-
     matchups = [("PPO", "NFSP"), ("AZ", "PPO"), ("NFSP", "AZ")]
     labels = []
     wins_bottom = []
@@ -344,7 +327,7 @@ def main():
     plt.savefig(os.path.join(OUTPUT_DIR, "round_robin_aggregated.png"))
     plt.close()
 
-    print(f"Aggregated round robin plot → {os.path.join(OUTPUT_DIR, 'round_robin_aggregated.png')}")
+    print(f"Aggregated round robin plot: {os.path.join(OUTPUT_DIR, 'round_robin_aggregated.png')}")
 
 
 if __name__ == "__main__":

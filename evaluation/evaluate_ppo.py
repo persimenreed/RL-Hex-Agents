@@ -1,10 +1,5 @@
 #!/usr/bin/env python3
-"""
-evaluate_ppo.py
 
-Evaluate PPO policies against MCTS for Hex (5×5, 8×8, 11×11),
-write evaluation/eval_{B}.csv, and copy the best checkpoint into best_weight/ppo/hex_{B}/.
-"""
 import os
 import sys
 import glob
@@ -15,14 +10,12 @@ import torch
 import numpy as np
 import pyspiel
 
-# Put project root on PYTHONPATH so we can import ppo_v0
-SCRIPT_DIR   = os.path.dirname(__file__)
+SCRIPT_DIR = os.path.dirname(__file__)
 PROJECT_ROOT = os.path.abspath(os.path.join(SCRIPT_DIR, os.pardir))
 sys.path.insert(0, PROJECT_ROOT)
 
 from open_spiel.python.algorithms import mcts
 from ppo.ppo_v0 import CNNPolicy
-
 
 def evaluate_vs_mcts(game, agent, mcts_bot, pid=0):
     wins = 0
@@ -56,22 +49,21 @@ class EvalMCTSBot:
 
 
 class EvalPPOAgent:
-    """Wrap a trained PPO CNNPolicy for evaluation"""
     def __init__(self, ckpt_path, obs_dim, board_size, n_actions):
         self.board_size = board_size
-        self.in_ch      = obs_dim // (board_size * board_size)
-        self.net        = CNNPolicy(self.in_ch, board_size, n_actions)
+        self.in_ch = obs_dim // (board_size * board_size)
+        self.net = CNNPolicy(self.in_ch, board_size, n_actions)
         self.net.load_state_dict(torch.load(ckpt_path, map_location="cpu"))
         self.net.eval()
 
     def act(self, state):
-        obs   = state.observation_tensor()
+        obs = state.observation_tensor()
         legal = list(state.legal_actions())
-        x     = torch.tensor(obs, dtype=torch.float32)
-        x     = x.view(1, self.in_ch, self.board_size, self.board_size)
+        x = torch.tensor(obs, dtype=torch.float32)
+        x = x.view(1, self.in_ch, self.board_size, self.board_size)
         with torch.no_grad():
             logits, _ = self.net(x)
-            logits    = logits.numpy()[0]
+            logits = logits.numpy()[0]
         mask = np.full_like(logits, -np.inf, dtype=np.float32)
         mask[legal] = 0.0
         return int(np.argmax(logits + mask))
@@ -79,11 +71,11 @@ class EvalPPOAgent:
 
 def main():
     for B in [5, 8, 11]:
-        print(f"\n=== Board size {B} ===")
-        game      = pyspiel.load_game(f"hex(board_size={B})")
-        sims      = {5:50, 8:50, 11:50}[B]
-        mcts_bot  = EvalMCTSBot(game, sims)
-        obs_dim   = game.observation_tensor_size()
+        print(f"\nBoard size {B}")
+        game = pyspiel.load_game(f"hex(board_size={B})")
+        sims = {5:50, 8:50, 11:50}[B]
+        mcts_bot = EvalMCTSBot(game, sims)
+        obs_dim = game.observation_tensor_size()
         n_actions = game.num_distinct_actions()
 
         # ensure eval dir
@@ -105,14 +97,14 @@ def main():
             paths.sort(key=lambda p: int(os.path.basename(p).split('_')[-1].replace('s.pt','')))
 
             for pth in paths:
-                t     = int(os.path.basename(pth).split("_")[-1].replace("s.pt",""))
+                t = int(os.path.basename(pth).split("_")[-1].replace("s.pt",""))
                 agent = EvalPPOAgent(pth, obs_dim, B, n_actions)
-                r     = evaluate_vs_mcts(game, agent, mcts_bot)
+                r = evaluate_vs_mcts(game, agent, mcts_bot)
                 print(f"[PPO {B}×{B}] @{t}s → {r:.3f}")
                 writer.writerow([t, f"{r:.3f}"])
 
                 if r > best_wr:
-                    best_wr   = r
+                    best_wr = r
                     best_ckpt = pth
 
         print(f"Wrote PPO results to {out_csv}")
@@ -121,7 +113,7 @@ def main():
             dst = os.path.join(SCRIPT_DIR, "best_weight", "ppo", f"hex_{B}")
             os.makedirs(dst, exist_ok=True)
             shutil.copy(best_ckpt, dst)
-            print(f"→ Best PPO @{os.path.basename(best_ckpt)} (win={best_wr:.3f}) → {dst}")
+            print(f"→ Best PPO @{os.path.basename(best_ckpt)} (win={best_wr:.3f}) to {dst}")
 
 
 if __name__ == "__main__":

@@ -1,15 +1,4 @@
 #!/usr/bin/env python3
-"""
-evaluate_alphazero.py
-
-Append AlphaZero vs MCTS win rates to your existing evaluation/eval_{B}.csv files,
-and copy the best checkpoint into best_weight/alpha_zero/hex_{B}/.
-Uses the TF graph placeholders and ops:
-  - input:0
-  - legals_mask:0
-  - training:0
-  - policy_softmax:0
-"""
 import os
 import sys
 import glob
@@ -20,16 +9,13 @@ import tensorflow.compat.v1 as tf
 import numpy as np
 import pyspiel
 
-# disable TF v2 behaviors
 tf.disable_v2_behavior()
 
-# bring project root on PYTHONPATH
-SCRIPT_DIR   = os.path.dirname(__file__)
+SCRIPT_DIR = os.path.dirname(__file__)
 PROJECT_ROOT = os.path.abspath(os.path.join(SCRIPT_DIR, os.pardir))
 sys.path.insert(0, PROJECT_ROOT)
 
 from open_spiel.python.algorithms import mcts
-
 
 def evaluate_vs_mcts(game, agent, mcts_bot, pid=0, num_games=100):
     wins = 0
@@ -62,27 +48,23 @@ class EvalMCTSBot:
 
 
 class EvalAlphaZeroAgent:
-    """
-    Loads one AlphaZero .meta + .index checkpoint, hooks:
-      input:0, legals_mask:0, training:0, policy_softmax:0
-    """
     def __init__(self, sess, ckpt_prefix):
         saver = tf.train.import_meta_graph(ckpt_prefix + ".meta", clear_devices=True)
         saver.restore(sess, ckpt_prefix)
         g = tf.get_default_graph()
-        self.obs_ph    = g.get_tensor_by_name("input:0")
+        self.obs_ph = g.get_tensor_by_name("input:0")
         self.legals_ph = g.get_tensor_by_name("legals_mask:0")
-        self.train_ph  = g.get_tensor_by_name("training:0")
-        self.probs_t   = g.get_tensor_by_name("policy_softmax:0")
-        self.sess      = sess
+        self.train_ph = g.get_tensor_by_name("training:0")
+        self.probs_t = g.get_tensor_by_name("policy_softmax:0")
+        self.sess = sess
 
     def act(self, state):
         obs  = state.observation_tensor()
         mask = np.array(state.legal_actions_mask(), dtype=np.float32)
         feed = {
-            self.obs_ph:    [obs],
+            self.obs_ph: [obs],
             self.legals_ph: [mask],
-            self.train_ph:  False,
+            self.train_ph: False,
         }
         probs = self.sess.run(self.probs_t, feed_dict=feed)[0]
         probs = probs * mask
@@ -91,27 +73,27 @@ class EvalAlphaZeroAgent:
 
 def main():
     for B in [11]:
-        print(f"\n=== Board size {B} ===")
-        game      = pyspiel.load_game(f"hex(board_size={B})")
-        sims      = {5:50, 8:50, 11:50}[B]
-        mcts_bot  = EvalMCTSBot(game, sims)
+        print(f"\nBoard size {B}")
+        game = pyspiel.load_game(f"hex(board_size={B})")
+        sims = {5:50, 8:50, 11:50}[B]
+        mcts_bot = EvalMCTSBot(game, sims)
 
         csv_path = os.path.join(PROJECT_ROOT, "evaluation", f"eval_{B}.csv")
         with open(csv_path, newline="") as f:
             reader = csv.reader(f)
             header = next(reader)
-            rows   = list(reader)
+            rows = list(reader)
 
         new_col = "az_mcts_win"
         if new_col in header:
-            print(f"  → {csv_path} already has {new_col}, skipping.")
+            print(f"{csv_path} already has {new_col}, skipping.")
             continue
         header.append(new_col)
 
         ckpt_dir = os.path.join(
             PROJECT_ROOT, "weights", "alpha_zero", f"alpha_zero_hex_{B}_4h"
         )
-        idxs     = glob.glob(os.path.join(ckpt_dir, "checkpoint-*.index"))
+        idxs = glob.glob(os.path.join(ckpt_dir, "checkpoint-*.index"))
         prefixes = sorted([p[:-6] for p in idxs],
                           key=lambda p: int(os.path.basename(p).split("-")[-1]))
         if len(prefixes) < len(rows):
@@ -120,7 +102,7 @@ def main():
             )
 
         # track best
-        best_wr   = -1.0
+        best_wr = -1.0
         best_pref = None
 
         tf.reset_default_graph()
@@ -128,8 +110,8 @@ def main():
             for i, row in enumerate(rows):
                 ckpt = prefixes[i]
                 agent = EvalAlphaZeroAgent(sess, ckpt)
-                wr    = evaluate_vs_mcts(game, agent, mcts_bot, pid=0)
-                print(f"   [{i+1}/{len(rows)}] {os.path.basename(ckpt)} → {wr:.3f}")
+                wr = evaluate_vs_mcts(game, agent, mcts_bot, pid=0)
+                print(f"[{i+1}/{len(rows)}] {os.path.basename(ckpt)} → {wr:.3f}")
                 row.append(f"{wr:.3f}")
 
                 if wr > best_wr:
@@ -140,7 +122,7 @@ def main():
             writer = csv.writer(f)
             writer.writerow(header)
             writer.writerows(rows)
-        print(f"  → updated {csv_path}")
+        print(f"Updated {csv_path}")
 
         # copy best
         if best_pref:
@@ -148,7 +130,7 @@ def main():
             os.makedirs(dst_dir, exist_ok=True)
             for fn in glob.glob(best_pref + "*"):
                 shutil.copy(fn, dst_dir)
-            print(f"  → best checkpoint (wr={best_wr:.3f}) copied to {dst_dir}")
+            print(f"Best checkpoint (wr={best_wr:.3f}) copied to {dst_dir}")
 
 if __name__ == "__main__":
     main()
