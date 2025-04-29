@@ -115,11 +115,17 @@ def evaluate_vs(game, agent, opp, pid, n_games=100):
 
     for i in range(n_games):
         state = game.new_initial_state()
-        for _ in range(1):
-            if state.is_terminal():
-                break
+
+        # random move by player 0
+        if not state.is_terminal() and state.current_player() == 0:
             actions = state.legal_actions()
             state.apply_action(random.choice(actions))
+        
+        # random move by player one
+        #if not state.is_terminal() and state.current_player() == 1:
+        #    actions = state.legal_actions()
+        #    state.apply_action(random.choice(actions))
+            
         swap = (i >= n_games // 2)
         first = (state.current_player() == pid) ^ swap
 
