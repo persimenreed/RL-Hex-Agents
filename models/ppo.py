@@ -13,7 +13,6 @@ import torch.optim as optim
 import pyspiel
 from open_spiel.python import rl_environment
 
-# ─────────────────── Config ────────────────────
 SEED = 42
 random.seed(SEED)
 numpy_seed = SEED
@@ -25,15 +24,14 @@ TRAIN_HOURS = 4
 MAX_TRAIN_SEC = TRAIN_HOURS * 3600.0
 BOARD_SIZES = [5, 8, 11]
 
-# PPO hyperparameters per board size
 LR = {5: 2e-4, 8: 1e-4, 11: 1e-4}
 UPDATE_EPOCHS = 4
 GAMMA = 0.99
 GAE_LAMBDA = 0.95
 EPS_CLIP = 0.2
 BATCH_SIZE = 64
-SNAPSHOT_INTERVAL_SEC = 600  # 10 minutes
-LOG_INTERVAL_SEC = 60.0      # 1 minute
+SNAPSHOT_INTERVAL_SEC = 600
+LOG_INTERVAL_SEC = 60.0
 
 class CNNPolicy(nn.Module):
     def __init__(self, in_channels, board_size, n_actions, hidden_dim=256):
@@ -86,7 +84,6 @@ class PPOAgent:
         probs = torch.softmax(logits + mask, dim=-1)
         dist = torch.distributions.Categorical(probs)
         action = dist.sample()
-        # Store detached logprob and value to avoid backprop through old graph
         self.buffer.states.append(x.detach())
         self.buffer.actions.append(action.detach())
         self.buffer.logprobs.append(dist.log_prob(action).detach())

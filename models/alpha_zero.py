@@ -52,7 +52,7 @@ def main():
             quiet=True,
         )
 
-        print(f"\n=== Starting AlphaZero for {b}×{b} hex: {TRAIN_HOURS}h limit ===")
+        print(f"\nStarting AlphaZero for {b}×{b} hex: {TRAIN_HOURS}h limit")
         proc = Process(target=run_alpha_zero, args=(config,))
         proc.start()
 

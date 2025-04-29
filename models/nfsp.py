@@ -1,10 +1,5 @@
 #!/usr/bin/env python3
-"""
-nfsp_train.py
 
-NFSP training with PPO-style schedules and hyperparameters,
-including dynamic epsilon and anticipatory-param annealing.
-"""
 import os
 import random
 import time
@@ -18,20 +13,17 @@ from open_spiel.python import rl_environment
 from open_spiel.python.algorithms import nfsp as nfsp_mod
 from open_spiel.python.algorithms.nfsp import NFSP
 
-# ─── IN-SCRIPT FIX FOR NaNs ─────────────────────────────────────────────────────
+# replacement for Open_Spiel NFSP _act function. I had trouble with NaN values.
 def safe_act(self, info_state, legal_actions):
-    """Replacement for NFSP._act that never produces NaNs or zero-sum probs."""
     info_state = np.reshape(info_state, [1, -1])
     _, avg_probs = self._session.run(
         [self._avg_policy, self._avg_policy_probs],
         feed_dict={self._info_state_ph: info_state})
     action_probs = avg_probs[0]
 
-    # mask
     probs = np.zeros(self._num_actions, dtype=np.float64)
     probs[legal_actions] = action_probs[legal_actions]
 
-    # guard, renormalize or uniform fallback
     eps_guard = 1e-8
     probs = np.nan_to_num(probs, nan=eps_guard,
                          posinf=eps_guard, neginf=eps_guard)
@@ -42,13 +34,12 @@ def safe_act(self, info_state, legal_actions):
     else:
         probs /= total
 
-    # sample
     action = np.random.choice(self._num_actions, p=probs)
     return action, probs
 
-# Monkey-patch before any NFSP agent is instantiated
 nfsp_mod.NFSP._act = safe_act
-# ────────────────────────────────────────────────────────────────────────────────
+
+
 
 tf.disable_v2_behavior()
 
@@ -65,36 +56,35 @@ SNAPSHOT_INTERVAL = 600.0
 LOG_INTERVAL      = 60.0
 
 # NFSP hyperparameters
-HIDDEN_LAYERS             = [64, 64]
+HIDDEN_LAYERS = [64, 64]
 RESERVOIR_BUFFER_CAPACITY = 50_000
-ANTICIPATORY_START        = 0.1
-ANTICIPATORY_END          = 0.01
-BATCH_SIZE                = 128
-RL_LR                     = 0.005   # ≥ SL_LR
-SL_LR                     = 0.001  # no faster than RL
-MIN_BUFFER_TO_LEARN       = 1_000
-LEARN_EVERY               = 64
+ANTICIPATORY_START = 0.1
+ANTICIPATORY_END = 0.01
+BATCH_SIZE = 128
+RL_LR = 0.005
+SL_LR = 0.001
+MIN_BUFFER_TO_LEARN = 1_000
+LEARN_EVERY = 64
 
-EPS_START       = 1.0
-EPS_END         = 0.05
+EPS_START = 1.0
+EPS_END = 0.05
 EPS_DECAY_DURATION = MAX_TRAIN_SEC / 2.0
 
+# reducing epsilon over time. Goes from 1 to 0.05 for the first 50% of training, 0.05 afterwards.
 def compute_epsilon(elapsed):
-    """Linear decay from EPS_START→EPS_END over EPS_DECAY_DURATION."""
     if elapsed < EPS_DECAY_DURATION:
         return EPS_START + (elapsed/EPS_DECAY_DURATION)*(EPS_END - EPS_START)
     return EPS_END
 
+# reducing anticipatory over time
 def compute_eta(elapsed):
-    """Anneal anticipatory param from ANTICIPATORY_START→ANTICIPATORY_END."""
     frac = min(1.0, elapsed / MAX_TRAIN_SEC)
     return ANTICIPATORY_START + frac*(ANTICIPATORY_END - ANTICIPATORY_START)
 # ────────────────────────────────────────────────────────────────────────────────
 
 def train_board(b: int):
-    """Train NFSP on hex(board_size=b) for up to TRAIN_HOURS."""
-    print(f"\n>>> Starting NFSP hex {b}×{b}")
-    root     = f"./weights/nfsp/nfsp_hex_{b}_{TRAIN_HOURS}h"
+    print(f"\n Starting NFSP hex {b}×{b}")
+    root = f"./weights/nfsp/nfsp_hex_{b}_{TRAIN_HOURS}h"
     os.makedirs(root, exist_ok=True)
     meta_csv = os.path.join(root, f"metadata_{b}x{b}.csv")
     with open(meta_csv, "w", newline="") as f:
@@ -105,7 +95,6 @@ def train_board(b: int):
     env  = rl_environment.Environment(game, include_full_state=True)
     sess = tf.Session()
 
-    # Create NFSP agents
     agents = []
     for pid in range(env.num_players):
         ag = NFSP(
@@ -128,14 +117,14 @@ def train_board(b: int):
 
     sess.run(tf.global_variables_initializer())
 
-    start     = time.time()
-    next_log  = start + LOG_INTERVAL
+    start = time.time()
+    next_log = start + LOG_INTERVAL
     next_snap = start + SNAPSHOT_INTERVAL
-    episode   = 0
+    episode = 0
 
     while True:
         episode += 1
-        now     = time.time()
+        now = time.time()
         elapsed = now - start
 
         # compute schedules
@@ -163,13 +152,12 @@ def train_board(b: int):
             print(f"[E{episode:5d}] b={b}×{b}  elapsed={elapsed:6.0f}s / {MAX_TRAIN_SEC:.0f}s  ε={eps:.3f}  η={eta:.3f}")
             next_log += LOG_INTERVAL
 
-        # snapshot
+        # storing weights every 10 minutes
         if now >= next_snap:
             with open(meta_csv, "a", newline="") as f:
                 writer = csv.writer(f)
                 writer.writerow([int(elapsed), episode, eta, eps])
             for pid, ag in enumerate(agents):
-                # avg-net
                 avg_saver = tf.train.Saver(ag._avg_network.variables)
                 avg_path  = os.path.join(root, f"avg_network_pid{pid}_{int(elapsed)}s.ckpt")
                 avg_saver.save(sess, avg_path)
