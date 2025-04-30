@@ -60,7 +60,6 @@ def make_move():
     except (TypeError, ValueError):
         return jsonify(error='Invalid move format'), 400
 
-    # RESET / NEW GAME
     if user_move < 0:
         session['moves'] = []
         session.modified = True
@@ -68,13 +67,11 @@ def make_move():
         occupancy = get_occupancy(state)
 
         if evaluator:
-            # global win-prob
             v0  = float(evaluator.evaluate(state)[0])
             raw = max(0.0, min(1.0, (v0 + 1.0) / 2.0))
             win_probs = [int(raw*100), 100-int(raw*100)]
             policy    = { str(a): float(p) for a,p in evaluator.prior(state) }
 
-            # per-action *raw* value in [-1,1]
             value_map = {}
             for a in state.legal_actions():
                 child = state.clone()
