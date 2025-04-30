@@ -44,6 +44,7 @@ for folder in folders:
     print(f"Saved CSV: {csv_path}")
 
     plt.figure(figsize=(10, 6))
+    #plt.plot(df['total_loss'], label='Total Loss')
     plt.plot(df['policy_loss'], label='Policy Loss')
     plt.plot(df['value_loss'], label='Value Loss')
     plt.plot(df['l2_loss'], label='L2 Loss')
