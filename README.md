@@ -1,11 +1,6 @@
 # RL-Hex-Agents
-to find open_spiel folder:
-\\wsl$\Ubuntu\home\persi\open_spiel
 
-to find project folder:
-\\wsl$\Ubuntu\home\persi\projects\RL-Hex-Agents
+## Showcasing of the project
 
-to run code in vscode:
-code .
-source venv/bin/activate
+![edge-cases](https://github.com/user-attachments/assets/087ce6b0-3c65-473b-8f39-ef46e362789e)
 
