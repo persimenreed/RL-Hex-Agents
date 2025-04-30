@@ -78,7 +78,7 @@ def main():
         sims = {5:50, 8:50, 11:50}[B]
         mcts_bot = EvalMCTSBot(game, sims)
 
-        csv_path = os.path.join(PROJECT_ROOT, "evaluation", f"eval_{B}.csv")
+        csv_path = os.path.join(PROJECT_ROOT, "evaluation", "output", f"eval_{B}.csv")
         with open(csv_path, newline="") as f:
             reader = csv.reader(f)
             header = next(reader)

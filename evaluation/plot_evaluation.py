@@ -40,7 +40,7 @@ for board, filename in files.items():
 
     plt.xlabel("Training Time (seconds)")
     plt.ylabel("Win Rate vs MCTS")
-    plt.title(f"Agent Performance vs MCTS ({board} board)")
+    #plt.title(f"Agent Performance vs MCTS ({board} board)")
     plt.legend()
     plt.grid(True)
     plt.tight_layout()
