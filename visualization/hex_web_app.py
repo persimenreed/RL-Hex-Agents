@@ -21,12 +21,6 @@ weights_root = os.path.abspath(
 checkpoint_dir = os.path.join(weights_root, 'hex_8_24h')
 checkpoint_name = 'checkpoint-200'
 
-# weights_root = os.path.abspath(
-#     os.path.join(BASE_DIR, '..', 'weights', 'alpha_zero',)
-# )
-# checkpoint_dir = os.path.join(weights_root, 'alpha_zero_hex_8_4h')
-# checkpoint_name = 'checkpoint-56'
-
 def load_model_evaluator(game, checkpoint_dir, checkpoint_name,
                          model_type="mlp", width=128, depth=3):
     full = os.path.join(checkpoint_dir, checkpoint_name)
@@ -50,12 +44,14 @@ evaluator = load_model_evaluator(game, checkpoint_dir, checkpoint_name)
 if evaluator is None:
     print("Failed to load AlphaZero model; falling back to random moves.")
 
+
 @app.route('/')
 def index():
     if 'moves' not in session:
         session['moves'] = []
         session.modified = True
     return render_template('index.html')
+
 
 @app.route('/make_move', methods=['POST'])
 def make_move():
@@ -64,47 +60,75 @@ def make_move():
     except (TypeError, ValueError):
         return jsonify(error='Invalid move format'), 400
 
+    # RESET / NEW GAME
     if user_move < 0:
         session['moves'] = []
         session.modified = True
-        state     = game.new_initial_state()
+        state = game.new_initial_state()
         occupancy = get_occupancy(state)
+
         if evaluator:
-            value = float(evaluator.evaluate(state)[0])
-            raw = 0.5 * (value * 0.8 + 1.0)
-            p1 = max(0.0, min(1.0, raw))
-            win_probs = [int(p1 * 100), 100 - int(p1 * 100)]
-            policy = { str(a): float(p) for a, p in evaluator.prior(state) }
+            # global win-prob
+            v0  = float(evaluator.evaluate(state)[0])
+            raw = max(0.0, min(1.0, (v0 + 1.0) / 2.0))
+            win_probs = [int(raw*100), 100-int(raw*100)]
+            policy    = { str(a): float(p) for a,p in evaluator.prior(state) }
+
+            # per-action *raw* value in [-1,1]
+            value_map = {}
+            for a in state.legal_actions():
+                child = state.clone()
+                child.apply_action(a)
+                if child.is_terminal():
+                    rets = child.returns()
+                    v = rets[0]
+                else:
+                    v = float(evaluator.evaluate(child)[0])
+                value_map[str(a)] = v
         else:
-            win_probs = [50, 50]
-            policy = {}
+            win_probs = [50,50]
+            policy    = {}
+            value_map = {}
+
         return jsonify(
             occupancy=occupancy,
             win_probs=win_probs,
             policy=policy,
+            value_map=value_map,
             game_over=False
         )
 
+    # REPLAY HISTORY
     state = game.new_initial_state()
-    for m in session.get('moves', []):
+    for m in session['moves']:
         state.apply_action(m)
 
     if user_move not in state.legal_actions():
         return jsonify(error='Illegal move'), 400
 
+    # APPLY USER MOVE
     state.apply_action(user_move)
     session['moves'].append(user_move)
     session.modified = True
 
+    # IF USER WINS
     if state.is_terminal():
         occupancy = get_occupancy(state)
+        rets = state.returns()
+        # rets[0] > rets[1] means first player won
+        if rets[0] > rets[1]:
+            win_probs = [100, 0]
+        else:
+            win_probs = [0, 100]
         return jsonify(
             occupancy=occupancy,
-            win_probs=[50,50],
+            win_probs=win_probs,
             policy={},
+            value_map={},
             game_over=True
         )
 
+    # AI MOVE
     if evaluator:
         pr = evaluator.prior(state)
         pr.sort(key=lambda x: -x[1])
@@ -118,31 +142,62 @@ def make_move():
 
     occupancy = get_occupancy(state)
 
-    if evaluator and not state.is_terminal():
-        value = float(evaluator.evaluate(state)[0])
-        raw = 0.5 * (value * 0.8 + 1.0)
-        p1 = max(0.0, min(1.0, raw))
-        win_probs = [int(p1 * 100), 100 - int(p1 * 100)]
-        policy = { str(a): float(p) for a, p in evaluator.prior(state) }
+    # AFTER AI MOVE
+    if state.is_terminal():
+        # AI just won
+        rets = state.returns()
+        if rets[0] > rets[1]:
+            win_probs = [100, 0]
+        else:
+            win_probs = [0, 100]
+        return jsonify(
+            occupancy=occupancy,
+            win_probs=win_probs,
+            policy={},
+            value_map={},
+            game_over=True
+        )
+
+    # non-terminal after AI
+    if evaluator:
+        v0  = float(evaluator.evaluate(state)[0])
+        raw = max(0.0, min(1.0, (v0 + 1.0) / 2.0))
+        win_probs = [int(raw*100), 100-int(raw*100)]
+        policy    = { str(a): float(p) for a,p in evaluator.prior(state) }
+
+        value_map = {}
+        for a in state.legal_actions():
+            child = state.clone()
+            child.apply_action(a)
+            if child.is_terminal():
+                rets = child.returns()
+                v = rets[0]
+            else:
+                v = float(evaluator.evaluate(child)[0])
+            value_map[str(a)] = v
     else:
-        win_probs = [50, 50]
-        policy = {}
+        win_probs = [50,50]
+        policy    = {}
+        value_map = {}
 
     return jsonify(
         occupancy=occupancy,
         win_probs=win_probs,
         policy=policy,
-        game_over=state.is_terminal()
+        value_map=value_map,
+        game_over=False
     )
+
 
 def get_occupancy(state):
     hist = state.history()
     occ = []
     for turn, action in enumerate(hist):
         r, c = divmod(action, BOARD_SIZE)
-        player = 1 if (turn % 2)==0 else 2
+        player = 1 if (turn % 2) == 0 else 2
         occ.append([r, c, player])
     return occ
+
 
 if __name__ == '__main__':
     app.run(debug=True)

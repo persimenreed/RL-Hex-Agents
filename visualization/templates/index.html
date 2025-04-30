@@ -1,250 +1,288 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Hex Game with AlphaZero</title>
-    <style>
-        body {
-            margin: 0;
-            height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            flex-direction: column;
-            background-color: #f0f0f0;
-        }
-        .game-container {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-        }
-        #win-probs {
-            font-size: 18px;
-            width: 650px;
-            height: 40px;
-            display: flex;
-            margin-bottom: 10px;
-        }
-        #p1-prob, #p2-prob {
-            color: white;
-            font-weight: bold;
-            text-align: center;
-            height: 100%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        #p1-prob { background-color: rgb(255, 66, 66); }
-        #p2-prob { background-color: rgb(0, 119, 255); }
-        svg {
-            background-color: white;
-            display: block;
-            overflow: visible;
-        }
-        .hexagon {
-            stroke: rgb(15, 15, 15);
-            stroke-width: 0.01;
-            cursor: pointer;
-        }
-        .button-row {
-            margin-top: 10px;
-            display: flex;
-            gap: 10px;
-        }
-        button {
-            padding: 8px 16px;
-            font-size: 14px;
-            cursor: pointer;
-            border: none;
-            border-radius: 4px;
-            background-color: #4CAF50;
-            color: white;
-        }
-        button:hover { background-color: #45a049; }
-        #toggle-heatmap {
-        width: 125px;
-        text-align: center;
+  <title>Hex Game with AlphaZero</title>
+  <style>
+    body {
+      margin: 0;
+      height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      flex-direction: column;
+      background-color: #f0f0f0;
     }
-        #toggle-heatmap.active { background-color: #f39c12; }
-    </style>
+    .game-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    #win-probs {
+      font-size: 18px;
+      width: 650px;
+      height: 40px;
+      display: flex;
+      margin-bottom: 10px;
+    }
+    #p1-prob, #p2-prob {
+      color: white;
+      font-weight: bold;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    #p1-prob { background-color: rgb(255,66,66); width:50%; }
+    #p2-prob { background-color: rgb(0,119,255); width:50%; }
+
+    svg {
+      background-color: white;
+      display: block;
+      overflow: visible;
+    }
+    .hexagon {
+      stroke: rgb(15,15,15);
+      stroke-width: 0.01;
+      cursor: pointer;
+    }
+    text.value-label {
+      pointer-events: none;
+    }
+    .button-row {
+      margin-top: 10px;
+      display: flex;
+      gap: 10px;
+    }
+    button {
+      padding: 8px 16px;
+      font-size: 14px;
+      cursor: pointer;
+      border: none;
+      border-radius: 4px;
+      background-color: #4CAF50;
+      color: white;
+    }
+    button:hover { background-color: #45a049; }
+    #toggle-heatmap, #toggle-value {
+      width: 125px;
+      text-align: center;
+    }
+    #toggle-heatmap.active,
+    #toggle-value.active {
+      background-color: #f39c12;
+    }
+  </style>
 </head>
 <body>
-    <div class="game-container">
-        <div id="win-probs">
-            <span id="p1-prob" style="width:50%">50%</span>
-            <span id="p2-prob" style="width:50%">50%</span>
-        </div>
-        <svg id="board" width="650" height="650"></svg>
-        <div class="button-row">
-            <button id="toggle-heatmap" class="active">Heatmap: ON</button>
-            <button id="reset-button">Reset Game</button>
-        </div>
+  <div class="game-container">
+    <div id="win-probs">
+      <span id="p1-prob">50%</span>
+      <span id="p2-prob">50%</span>
     </div>
+    <svg id="board" width="650" height="650"></svg>
+      <div class="button-row">
+          <button id="toggle-heatmap">Heatmap: OFF</button>
+      <button id="toggle-value">Value: OFF</button>
+      <button id="reset-button">Reset Game</button>
+    </div>
+  </div>
 
-    <script>
-    const N = 8;
+  <script>
+    const N      = 8;
     const radius = 0.4;
-    const dx = Math.sqrt(3) * radius;
-    const dy = 1.5 * radius;
+    const dx     = Math.sqrt(3)*radius;
+    const dy     = 1.5*radius;
     const margin = 0.15;
-    const HEATMAP_CUTOFF = 0.25;
+    const CUT    = 0.25;
 
-    const P1_COLOR = 'rgb(255, 66, 66)';
-    const P2_COLOR = 'rgb(0, 119, 255)';
+    const P1 = 'rgb(255,66,66)';
+    const P2 = 'rgb(0,119,255)';
+    const PC = 'darkgreen';
 
     const svg = document.getElementById('board');
-    const minX = -dx/2 - margin;
-    const maxX = (3*(N-1)/2)*dx + dx/2 + margin;
-    const minY = -(N-1)*dy - radius - margin;
-    const maxY = radius + margin;
+    const minX = -dx/2 - margin,
+          maxX = (3*(N-1)/2)*dx + dx/2 + margin;
+    const minY = -(N-1)*dy - radius - margin,
+          maxY = radius + margin;
     svg.setAttribute('viewBox', `${minX} ${minY} ${maxX-minX} ${maxY-minY}`);
 
-    const g = document.createElementNS('http://www.w3.org/2000/svg','g');
-    const cx = (minX + maxX)/2;
-    const cy = (minY + maxY)/2;
-    g.setAttribute('transform', `translate(${cx} ${cy}) scale(0.85) rotate(-60) translate(${-cx} ${-cy})`);
+    // Rotated group
+    const g  = document.createElementNS('http://www.w3.org/2000/svg','g');
+    const cx = (minX+maxX)/2, cy = (minY+maxY)/2;
+    g.setAttribute(
+      'transform',
+      `translate(${cx} ${cy}) scale(0.85) rotate(-60) translate(${-cx} ${-cy})`
+    );
     svg.appendChild(g);
 
     function makeLine(x1,y1,x2,y2,stroke) {
-      const line = document.createElementNS('http://www.w3.org/2000/svg','line');
-      line.setAttribute('x1', x1);
-      line.setAttribute('y1', y1);
-      line.setAttribute('x2', x2);
-      line.setAttribute('y2', y2);
-      line.setAttribute('stroke', stroke);
-      line.setAttribute('stroke-width', 0.15);
-      g.appendChild(line);
+      const L = document.createElementNS('http://www.w3.org/2000/svg','line');
+      L.setAttribute('x1',x1); L.setAttribute('y1',y1);
+      L.setAttribute('x2',x2); L.setAttribute('y2',y2);
+      L.setAttribute('stroke',stroke);
+      L.setAttribute('stroke-width',0.15);
+      g.appendChild(L);
     }
 
-    const topY = radius + margin;
-    makeLine(0, topY, (N-1)*dx, topY, P1_COLOR);
+    // Draw borders
+    makeLine(0, radius+margin, (N-1)*dx, radius+margin, P1);
+    makeLine(
+      (N-1)*dx/2, -(N-1)*dy-radius-margin,
+      3*(N-1)/2*dx, -(N-1)*dy-radius-margin,
+      P1
+    );
+    makeLine(
+      (N-1)*dx+dx/2+margin, radius/2,
+      3*(N-1)/2*dx+dx/2+margin, -(N-1)*dy+radius/2,
+      P2
+    );
+    makeLine(
+      (N-1)*dx+dx/2+margin-5.8, radius/2-0.5,
+      3*(N-1)/2*dx+dx/2+margin-5.8, -(N-1)*dy+radius/2-0.5,
+      P2
+    );
 
-    const bottomY = -(N-1)*dy - radius - margin;
-    makeLine((N-1)*dx/2, bottomY, 3*(N-1)/2*dx, bottomY, P1_COLOR);
+    let heatmapEnabled = false,
+        valueEnabled   = false,
+        lastData       = {
+          occupancy: [],
+          policy: {},
+          value_map: {},
+          win_probs: [50,50],
+          game_over: false
+        };
 
-    const rightXTop = (N-1)*dx + dx/2 + margin;
-    const rightYTop = radius/2;
-    const rightXBot = 3*(N-1)/2*dx + dx/2 + margin;
-    const rightYBot = -(N-1)*dy + radius/2;
-
-    makeLine(rightXTop, rightYTop, rightXBot, rightYBot, P2_COLOR);
-
-    const shiftX = -5.8;
-    const shiftY = -0.5;
-
-    const leftXTop = rightXTop + shiftX;
-    const leftYTop = rightYTop + shiftY;
-    const leftXBot = rightXBot + shiftX;
-    const leftYBot = rightYBot + shiftY;
-
-    makeLine(leftXTop, leftYTop, leftXBot, leftYBot, P2_COLOR);
-
-    
-    let heatmapEnabled = true;
-    let lastData = { occupancy: [], policy: {}, win_probs: [50,50] };
-
-    function makeUserMove(r, c) {
+    function makeUserMove(r,c) {
       fetch('/make_move', {
-        method: 'POST', credentials: 'same-origin',
-        headers: {'Content-Type':'application/x-www-form-urlencoded'},
-        body: `move=${r*N + c}`
+        method:'POST', credentials:'same-origin',
+        headers:{'Content-Type':'application/x-www-form-urlencoded'},
+        body:`move=${r*N+c}`
       })
-      .then(r => r.json()).then(data => {
-        if (data.error) return;
-        lastData = data;
-        updateBoard(data.occupancy, data.policy);
-        if (data.game_over) {
-          const last = data.occupancy.pop();
-          updateWinBar(last[2]===1?[100,0]:[0,100]);
-        } else updateWinBar(data.win_probs);
+      .then(r=>r.json())
+      .then(d=>{
+        if (d.error) return;
+        lastData = d;
+        updateBoard();
+        updateWinBar(d.win_probs);
       });
     }
 
-    for (let r = 0; r < N; r++) {
-      for (let c = 0; c < N; c++) {
+    // Build hex grid
+    for (let r=0; r<N; r++){
+      for (let c=0; c<N; c++){
         const x = c*dx + r*(dx/2), y = -r*dy;
-        const hex = document.createElementNS('http://www.w3.org/2000/svg','polygon');
-        const pts = [0,1,2,3,4,5].map(i => {
+        const hex = document.createElementNS(
+          'http://www.w3.org/2000/svg','polygon'
+        );
+        const pts = [...Array(6)].map((_,i)=>{
           const a = Math.PI/3*i + Math.PI/6;
-          return [x + radius*Math.cos(a), y + radius*Math.sin(a)];
-        }).map(p=>p.join(',')).join(' ');
+          return [x + radius*Math.cos(a), y + radius*Math.sin(a)].join(',');
+        }).join(' ');
         hex.setAttribute('points', pts);
-        hex.setAttribute('class','hexagon');
-        hex.setAttribute('id',`hex_${r}_${c}`);
-        hex.setAttribute('fill','white');
-        hex.addEventListener('click', () => makeUserMove(r,c));
+        hex.setAttribute('class', 'hexagon');
+        hex.setAttribute('id', `hex_${r}_${c}`);
+        hex.dataset.center = `${x},${y}`;
+        hex.setAttribute('fill', 'white');
+        hex.addEventListener('click', ()=> makeUserMove(r,c));
         g.appendChild(hex);
       }
     }
 
-    document.getElementById('toggle-heatmap').onclick = () => {
+    document.getElementById('toggle-heatmap').onclick = ()=>{
       heatmapEnabled = !heatmapEnabled;
-      const btn = document.getElementById('toggle-heatmap');
-      btn.classList.toggle('active', heatmapEnabled);
-      btn.textContent = `Heatmap: ${heatmapEnabled?'ON':'OFF'}`;
-      updateBoard(lastData.occupancy, lastData.policy);
+      const b = document.getElementById('toggle-heatmap');
+      b.classList.toggle('active', heatmapEnabled);
+      b.textContent = `Heatmap: ${heatmapEnabled?'ON':'OFF'}`;
+      updateBoard();
     };
 
-    function updateBoard(occ, policy) {
-      const occMap = new Map(occ.map(([r,c,p])=>[`${r}_${c}`, p]));
-      const maxP = heatmapEnabled 
-                  ? Math.max(...Object.values(policy), 0) 
-                  : 0;
+    document.getElementById('toggle-value').onclick = ()=>{
+      valueEnabled = !valueEnabled;
+      const b = document.getElementById('toggle-value');
+      b.classList.toggle('active', valueEnabled);
+      b.textContent = `Value: ${valueEnabled?'ON':'OFF'}`;
+      updateBoard();
+    };
 
-      document.querySelectorAll('.hexagon').forEach(h => {
-        const [r,c] = h.id.split('_').slice(1).map(Number);
-        const key = `${r}_${c}`;
+    function updateBoard(){
+      // clear old value labels
+      g.querySelectorAll('text.value-label').forEach(t=>t.remove());
 
-        if (occMap.has(key)) {
-          h.setAttribute('fill',
-            occMap.get(key) === 1
-              ? P1_COLOR
-              : P2_COLOR
-          );
-          h.removeAttribute('fill-opacity');
+      const occMap = new Map(
+        lastData.occupancy.map(([r,c,p])=>[`${r}_${c}`,p])
+      );
+      const polMap = lastData.policy;
+      const maxP   = Math.max(0, ...Object.values(polMap));
+
+      g.querySelectorAll('.hexagon').forEach(h=>{
+        const [_,r,c] = h.id.split('_').map(Number),
+              key    = `${r}_${c}`;
+
+        // reset
+        h.setAttribute('fill','white');
+        h.removeAttribute('fill-opacity');
+
+        // draw stones
+        if (occMap.has(key)){
+          h.setAttribute('fill', occMap.get(key)===1?P1:P2);
         }
-        else if (heatmapEnabled) {
-          const rawP = policy[r*N + c] || 0;
-          const normP = maxP>0 ? rawP / maxP : 0;
-
-          if (normP >= HEATMAP_CUTOFF) {
-            const alpha = Math.pow((normP - HEATMAP_CUTOFF)/(1-HEATMAP_CUTOFF), 0.8);
-            h.setAttribute('fill', 'darkgreen');
-            h.setAttribute('fill-opacity', alpha);
-          } else {
-            h.setAttribute('fill', 'transparent');
-            h.removeAttribute('fill-opacity');
+        // policy heatmap
+        else if (heatmapEnabled && maxP>0){
+          const raw = polMap[String(r*N+c)]||0,
+                norm= raw/maxP;
+          if (norm>=CUT){
+            const a = Math.pow((norm-CUT)/(1-CUT),0.8);
+            h.setAttribute('fill', PC);
+            h.setAttribute('fill-opacity', a);
           }
         }
-        else {
-          h.setAttribute('fill','white');
-          h.removeAttribute('fill-opacity');
+
+        // value labels only if game not over
+        if (valueEnabled && !lastData.game_over && !occMap.has(key)){
+          const [cxh,cyh] = h.dataset.center.split(',').map(Number);
+          const v = lastData.value_map[String(r*N+c)]||0;
+          const txt = document.createElementNS(
+            'http://www.w3.org/2000/svg','text'
+          );
+          txt.setAttribute('class','value-label');
+          txt.setAttribute('x', cxh);
+          txt.setAttribute('y', cyh + 0.1);
+          txt.setAttribute('text-anchor','middle');
+          txt.setAttribute('alignment-baseline','central');
+          txt.setAttribute('font-size', radius*0.5);
+          txt.setAttribute(
+            'transform',
+            `rotate(60 ${cxh} ${cyh})`
+          );
+          const sign = v>=0? '+' : '';
+          txt.textContent = sign + v.toFixed(2);
+          g.appendChild(txt);
         }
       });
     }
 
-
-    function updateWinBar([p1,p2]) {
-      const p1El = document.getElementById('p1-prob'),
-            p2El = document.getElementById('p2-prob');
-      p1El.style.width = `${p1}%`;
-      p2El.style.width = `${p2}%`;
-      p1El.textContent = p1?`${p1}%`:'';
-      p2El.textContent = p2?`${p2}%`:'';
+    function updateWinBar([p1,p2]){
+      document.getElementById('p1-prob').style.width = `${p1}%`;
+      document.getElementById('p2-prob').style.width = `${p2}%`;
+      document.getElementById('p1-prob').textContent = p1?`${p1}%`:'';
+      document.getElementById('p2-prob').textContent = p2?`${p2}%`:'';
     }
 
-    document.getElementById('reset-button').onclick = () => {
-      fetch('/make_move',{
+    document.getElementById('reset-button').onclick = ()=>{
+      fetch('/make_move', {
         method:'POST', credentials:'same-origin',
         headers:{'Content-Type':'application/x-www-form-urlencoded'},
         body:'move=-1'
-      }).then(r=>r.json()).then(data=>{
-        lastData = data;
-        updateBoard(data.occupancy, data.policy);
-        updateWinBar(data.win_probs);
+      })
+      .then(r=>r.json())
+      .then(d=>{
+        lastData = d;
+        updateBoard();
+        updateWinBar(d.win_probs);
       });
     };
 
+    // initialize board
     document.getElementById('reset-button').click();
-    </script>
+  </script>
 </body>
 </html>
