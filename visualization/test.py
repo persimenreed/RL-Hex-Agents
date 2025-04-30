@@ -164,7 +164,7 @@ def test_hex_visual(checkpoint_dir, ck1, ck2, fig, ax_bar, ax_board, board_size)
         # redraw both
         draw_value_bar(ax_bar,   state, ev1)
         draw_policy_hex(ax_board, state, ev1, board_size)
-        plt.pause(0.1)
+        plt.pause(1.0)
 
     print("Game over:", state.returns())
     plt.pause(1.0)
