@@ -1,11 +1,5 @@
 #!/usr/bin/env python3
-"""
-visualize_state_values.py
 
-Live-update Hex board with AlphaZero state-value overlays (only for the first evaluator).
-Usage:
-    python3 visualize_state_values.py <checkpoint_dir> <ckpt1> <ckpt2>
-"""
 import os
 import sys
 import time
@@ -16,7 +10,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.patches import RegularPolygon
 
-# Attempt to import AlphaZero
 try:
     from open_spiel.python.algorithms.alpha_zero import model as model_lib
     from open_spiel.python.algorithms.alpha_zero import evaluator as evaluator_lib
@@ -61,7 +54,6 @@ def draw_hex_board(board, ax, move_number):
             )
             ax.add_patch(hexagon)
 
-    # goal lines
     offset = 0.6
     for row in [0, size - 1]:
         x0 = 0 + 0.5 * row
@@ -109,12 +101,10 @@ def load_model_evaluator(game, checkpoint_dir, checkpoint_name,
 
 
 def draw_board_with_values(state, evaluator, board_size, ax):
-    # 1) draw the base board
     board = get_board_from_state(state, board_size)
     draw_hex_board(board, ax, len(state.history()))
 
     if evaluator is None:
-        # no values to draw
         plt.draw()
         plt.pause(0.001)
         return
@@ -123,13 +113,11 @@ def draw_board_with_values(state, evaluator, board_size, ax):
         next_state = state.child(action)
 
         if next_state.is_terminal():
-            # final reward from player1's POV
             v = next_state.returns()[0]
         else:
-            vals = evaluator.evaluate(next_state)  # [value_player1, value_player2]
+            vals = evaluator.evaluate(next_state)
             v    = vals[0] 
 
-        # 3) compute text coords
         row, col = divmod(action, board_size)
         x = col + 0.5 * row
         y = -row
@@ -141,7 +129,6 @@ def draw_board_with_values(state, evaluator, board_size, ax):
             color="black", fontsize=8, fontweight="bold"
         )
 
-    # 4) make sure our view doesn’t zoom out
     ax.set_xlim(-1, board_size + board_size * 0.75)
     ax.set_ylim(-board_size - 1.5, 1.5)
     plt.draw()
@@ -157,13 +144,12 @@ def test_hex_visual(checkpoint_dir, ckpt1, ckpt2, fig, ax, board_size):
     evaluators = [ev1, ev2]
     
     draw_board_with_values(state, ev1, board_size, ax)
-    plt.pause(10)
+    plt.pause(3)
 
     print("Starting Hex game with live value visualization...")
     move_count = 0
     while not state.is_terminal():
         cur = state.current_player()
-        # choose move by real eval if available, else random
         if evaluators[cur]:
             policy = evaluators[cur].prior(state)
             policy.sort(key=lambda x: -x[1])
@@ -174,7 +160,6 @@ def test_hex_visual(checkpoint_dir, ckpt1, ckpt2, fig, ax, board_size):
         state.apply_action(action)
         move_count += 1
 
-        # always draw with the *first* evaluator (ev1)
         draw_board_with_values(state, ev1, board_size, ax)
         plt.pause(0.1)
 
@@ -192,7 +177,6 @@ def main():
     checkpoint_dir = sys.argv[1]
     ckpt1          = sys.argv[2]
     ckpt2          = sys.argv[3]
-    # choose your board size here (or parse from path)
     board_size = 8
 
     plt.ion()

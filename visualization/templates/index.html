@@ -33,16 +33,16 @@
             align-items: center;
             justify-content: center;
         }
-        #p1-prob { background-color: red; }
-        #p2-prob { background-color: blue; }
+        #p1-prob { background-color: rgb(255, 66, 66); }
+        #p2-prob { background-color: rgb(0, 119, 255); }
         svg {
             background-color: white;
             display: block;
             overflow: visible;
         }
         .hexagon {
-            stroke: gray;
-            stroke-width: 0.03;
+            stroke: rgb(15, 15, 15);
+            stroke-width: 0.01;
             cursor: pointer;
         }
         .button-row {
@@ -60,6 +60,10 @@
             color: white;
         }
         button:hover { background-color: #45a049; }
+        #toggle-heatmap {
+        width: 125px;
+        text-align: center;
+    }
         #toggle-heatmap.active { background-color: #f39c12; }
     </style>
 </head>
@@ -77,30 +81,29 @@
     </div>
 
     <script>
-    // === Configuration ===
     const N = 8;
     const radius = 0.4;
     const dx = Math.sqrt(3) * radius;
     const dy = 1.5 * radius;
-    const margin = 0.15;  // tighter fit
+    const margin = 0.15;
+    const HEATMAP_CUTOFF = 0.25;
 
-    // === SVG & Group Setup ===
+    const P1_COLOR = 'rgb(255, 66, 66)';
+    const P2_COLOR = 'rgb(0, 119, 255)';
+
     const svg = document.getElementById('board');
-    // compute viewBox for diamond
     const minX = -dx/2 - margin;
     const maxX = (3*(N-1)/2)*dx + dx/2 + margin;
     const minY = -(N-1)*dy - radius - margin;
     const maxY = radius + margin;
     svg.setAttribute('viewBox', `${minX} ${minY} ${maxX-minX} ${maxY-minY}`);
 
-    // group for rotation
     const g = document.createElementNS('http://www.w3.org/2000/svg','g');
     const cx = (minX + maxX)/2;
     const cy = (minY + maxY)/2;
     g.setAttribute('transform', `translate(${cx} ${cy}) scale(0.85) rotate(-60) translate(${-cx} ${-cy})`);
     svg.appendChild(g);
 
-    // === Draw Boundaries ===
     function makeLine(x1,y1,x2,y2,stroke) {
       const line = document.createElementNS('http://www.w3.org/2000/svg','line');
       line.setAttribute('x1', x1);
@@ -112,35 +115,30 @@
       g.appendChild(line);
     }
 
-    // top red line
     const topY = radius + margin;
-    makeLine(0, topY, (N-1)*dx, topY, 'red');
+    makeLine(0, topY, (N-1)*dx, topY, P1_COLOR);
 
-    // bottom red line
     const bottomY = -(N-1)*dy - radius - margin;
-    makeLine((N-1)*dx/2, bottomY, 3*(N-1)/2*dx, bottomY, 'red');
+    makeLine((N-1)*dx/2, bottomY, 3*(N-1)/2*dx, bottomY, P1_COLOR);
 
     const rightXTop = (N-1)*dx + dx/2 + margin;
     const rightYTop = radius/2;
     const rightXBot = 3*(N-1)/2*dx + dx/2 + margin;
     const rightYBot = -(N-1)*dy + radius/2;
 
-    makeLine(rightXTop, rightYTop, rightXBot, rightYBot, 'blue');
+    makeLine(rightXTop, rightYTop, rightXBot, rightYBot, P2_COLOR);
 
-    // Left blue line (copy right one, shift left and down)
-    const shiftX = -5.8; // - goes left and down
-    const shiftY = -0.5; // + goes right and down
+    const shiftX = -5.8;
+    const shiftY = -0.5;
 
     const leftXTop = rightXTop + shiftX;
     const leftYTop = rightYTop + shiftY;
     const leftXBot = rightXBot + shiftX;
     const leftYBot = rightYBot + shiftY;
 
-    makeLine(leftXTop, leftYTop, leftXBot, leftYBot, 'blue');
+    makeLine(leftXTop, leftYTop, leftXBot, leftYBot, P2_COLOR);
 
     
-
-    // === Hex Grid & Interaction ===
     let heatmapEnabled = true;
     let lastData = { occupancy: [], policy: {}, win_probs: [50,50] };
 
@@ -178,7 +176,6 @@
       }
     }
 
-    // === Heatmap & Board Update ===
     document.getElementById('toggle-heatmap').onclick = () => {
       heatmapEnabled = !heatmapEnabled;
       const btn = document.getElementById('toggle-heatmap');
@@ -189,23 +186,42 @@
 
     function updateBoard(occ, policy) {
       const occMap = new Map(occ.map(([r,c,p])=>[`${r}_${c}`, p]));
-      const maxP = heatmapEnabled
-                    ? Math.max(...Object.values(policy), 0)
-                    : 0;
+      const maxP = heatmapEnabled 
+                  ? Math.max(...Object.values(policy), 0) 
+                  : 0;
+
       document.querySelectorAll('.hexagon').forEach(h => {
         const [r,c] = h.id.split('_').slice(1).map(Number);
         const key = `${r}_${c}`;
+
         if (occMap.has(key)) {
-          h.setAttribute('fill', occMap.get(key)===1?'red':'blue');
-        } else if (heatmapEnabled) {
-          const p = policy[r*N+c]||0;
-          if (p>0.03) {
-            const s = Math.floor(255*(1-Math.pow(p/maxP,0.8)));
-            h.setAttribute('fill', `rgb(${s},255,${s})`);
-          } else h.setAttribute('fill','white');
-        } else h.setAttribute('fill','white');
+          h.setAttribute('fill',
+            occMap.get(key) === 1
+              ? P1_COLOR
+              : P2_COLOR
+          );
+          h.removeAttribute('fill-opacity');
+        }
+        else if (heatmapEnabled) {
+          const rawP = policy[r*N + c] || 0;
+          const normP = maxP>0 ? rawP / maxP : 0;
+
+          if (normP >= HEATMAP_CUTOFF) {
+            const alpha = Math.pow((normP - HEATMAP_CUTOFF)/(1-HEATMAP_CUTOFF), 0.8);
+            h.setAttribute('fill', 'darkgreen');
+            h.setAttribute('fill-opacity', alpha);
+          } else {
+            h.setAttribute('fill', 'transparent');
+            h.removeAttribute('fill-opacity');
+          }
+        }
+        else {
+          h.setAttribute('fill','white');
+          h.removeAttribute('fill-opacity');
+        }
       });
     }
+
 
     function updateWinBar([p1,p2]) {
       const p1El = document.getElementById('p1-prob'),
@@ -229,7 +245,6 @@
       });
     };
 
-    // initial reset
     document.getElementById('reset-button').click();
     </script>
 </body>
