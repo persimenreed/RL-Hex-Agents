@@ -2,5 +2,4 @@
 
 ## Showcasing of the project
 
-![edge-cases](https://github.com/user-attachments/assets/087ce6b0-3c65-473b-8f39-ef46e362789e)
-
+![Skjermopptak2025-04-30154305-ezgif com-video-to-gif-converter](https://github.com/user-attachments/assets/9ec675a7-d06e-4a19-b1e5-c54dd7572bcc)
