@@ -4,3 +4,4 @@ keras<2.16
 numpy<2.0.0
 ml-dtypes~=0.2.0
 wrapt<1.15
+flask
