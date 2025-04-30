@@ -4,7 +4,10 @@ import tensorflow as tf
 from multiprocessing import Process
 from open_spiel.python.algorithms.alpha_zero.alpha_zero import alpha_zero, Config
 
-def run_alpha_zero(config):
+def run_alpha_zero(config, checkpoint_path=None):
+    if checkpoint_path:
+        print(f"Manually resuming from checkpoint: {checkpoint_path}")
+        config.starting_checkpoint = checkpoint_path
     alpha_zero(config)
 
 def main():
@@ -18,24 +21,28 @@ def main():
     TRAIN_HOURS = 24
     TRAIN_SECONDS = (TRAIN_HOURS * 3600) + 200
 
-    #BOARD_SIZES = [5, 8, 11]
     BOARD_SIZES = [8]
 
     for b in BOARD_SIZES:
         output_path = f"./weights/alpha_zero/alpha_zero_hex_{b}_{TRAIN_HOURS}h"
         os.makedirs(output_path, exist_ok=True)
 
+        #checkpoint_number = 200
+        #checkpoint_path = os.path.join(output_path, f"checkpoint-{checkpoint_number}")
+
+        resume = os.path.exists(checkpoint_path + ".index")
+
         config = Config(
             game=f"hex(board_size={b})",
             path=output_path,
             learning_rate=0.001,
             weight_decay=0.0001,
-            train_batch_size=128,
+            train_batch_size=64,
             replay_buffer_size=50000,
             replay_buffer_reuse=3,
             max_steps=1000000,
-            checkpoint_freq=1,
-            actors=32,
+            checkpoint_freq=200,
+            actors=64,
             evaluators=4,
             evaluation_window=20,
             eval_levels=1,
@@ -46,15 +53,15 @@ def main():
             temperature=1.0,
             temperature_drop=10,
             nn_model='mlp',
-            nn_width=64,
-            nn_depth=2,
+            nn_width=128,
+            nn_depth=3,
             observation_shape=None,
             output_size=None,
             quiet=True,
         )
 
-        print(f"\nStarting AlphaZero for {b}×{b} hex: {TRAIN_HOURS}h limit")
-        proc = Process(target=run_alpha_zero, args=(config,))
+        print(f"\nStarting AlphaZero for {b}×{b} hex: {TRAIN_HOURS}h limit (resume={resume})")
+        proc = Process(target=run_alpha_zero, args=(config, checkpoint_path if resume else None))
         proc.start()
 
         proc.join(TRAIN_SECONDS)
