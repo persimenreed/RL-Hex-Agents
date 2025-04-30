@@ -232,7 +232,6 @@
       p2El.textContent = p2?`${p2}%`:'';
     }
 
-    // === Reset & Initial Load ===
     document.getElementById('reset-button').onclick = () => {
       fetch('/make_move',{
         method:'POST', credentials:'same-origin',

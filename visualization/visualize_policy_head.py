@@ -80,7 +80,6 @@ def draw_policy_hex(ax, state, evaluator, board_size, policy_cutoff=0.03):
             )
             ax.add_patch(hexagon)
 
-    # goal lines
     offset = 0.6
     for r in (0, board_size-1):
         x0 = 0 + 0.5*r
@@ -128,8 +127,7 @@ def test_hex_visual(checkpoint_dir, ck1, ck2, fig, ax_board, board_size):
 
 def main():
     if len(sys.argv)<4:
-        print("Usage: python3 visualize_state_values.py"
-              " <checkpoint_dir> <ckpt1> <ckpt2>")
+        print("Usage: python3 visualize_state_values.py <checkpoint_dir> <ckpt1> <ckpt2>")
         sys.exit(1)
     checkpoint_dir, ck1, ck2 = sys.argv[1:4]
     board_size = 8

@@ -25,5 +25,5 @@ Thumbs.db
 #**/log-learner*
 
 # ingore weights
-#weights/
+weights/
 

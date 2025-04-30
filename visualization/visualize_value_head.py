@@ -175,8 +175,8 @@ def main():
         sys.exit(1)
 
     checkpoint_dir = sys.argv[1]
-    ckpt1          = sys.argv[2]
-    ckpt2          = sys.argv[3]
+    ckpt1 = sys.argv[2]
+    ckpt2 = sys.argv[3]
     board_size = 8
 
     plt.ion()
