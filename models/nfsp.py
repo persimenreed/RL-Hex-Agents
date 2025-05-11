@@ -44,16 +44,16 @@ nfsp_mod.NFSP._act = safe_act
 tf.disable_v2_behavior()
 
 # ──────────────────── CONFIGURATION ────────────────────────────────────────────
-SEED            = 42
+SEED = 42
 random.seed(SEED)
 np.random.seed(SEED)
 
-TRAIN_HOURS     = 4
-MAX_TRAIN_SEC   = TRAIN_HOURS * 3600.0
+TRAIN_HOURS = 4
+MAX_TRAIN_SEC = TRAIN_HOURS * 3600.0
 
-BOARD_SIZES     = [5, 8, 11]
+BOARD_SIZES = [5, 8, 11]
 SNAPSHOT_INTERVAL = 600.0
-LOG_INTERVAL      = 60.0
+LOG_INTERVAL = 60.0
 
 # NFSP hyperparameters
 HIDDEN_LAYERS = [64, 64]
@@ -133,8 +133,8 @@ def train_board(b: int):
 
         # override NFSP internals
         for ag in agents:
-            ag._rl_agent._epsilon     = eps
-            ag._anticipatory_param    = eta
+            ag._rl_agent._epsilon = eps
+            ag._anticipatory_param = eta
             ag._sample_episode_policy()
 
         # run one episode
@@ -159,10 +159,10 @@ def train_board(b: int):
                 writer.writerow([int(elapsed), episode, eta, eps])
             for pid, ag in enumerate(agents):
                 avg_saver = tf.train.Saver(ag._avg_network.variables)
-                avg_path  = os.path.join(root, f"avg_network_pid{pid}_{int(elapsed)}s.ckpt")
+                avg_path = os.path.join(root, f"avg_network_pid{pid}_{int(elapsed)}s.ckpt")
                 avg_saver.save(sess, avg_path)
-                q_saver   = tf.train.Saver(ag._rl_agent._q_network.variables)
-                q_path    = os.path.join(root, f"q_network_pid{pid}_{int(elapsed)}s.ckpt")
+                q_saver = tf.train.Saver(ag._rl_agent._q_network.variables)
+                q_path = os.path.join(root, f"q_network_pid{pid}_{int(elapsed)}s.ckpt")
                 q_saver.save(sess, q_path)
             next_snap += SNAPSHOT_INTERVAL
 
